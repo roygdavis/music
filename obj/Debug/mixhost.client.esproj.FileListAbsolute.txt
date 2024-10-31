@@ -1,0 +1,2 @@
+C:\Users\roy_g\source\repos\MixHost\mixhost.client\obj\Debug\mixhost.client.esproj.CoreCompileInputs.cache
+D:\repos\MixHost\mixhost.client\obj\Debug\mixhost.client.esproj.CoreCompileInputs.cache
