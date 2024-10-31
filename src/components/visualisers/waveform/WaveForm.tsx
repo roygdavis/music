@@ -121,7 +121,7 @@ const WaveForm = (props: IVisualiserProps) => {
 export default WaveForm;
 
 const drawWaveLine = (props: DrawParameters) => {
-    const { analyser, buffer, canvasCtx, width, height, frameRef } = props;
+    const { analyser, buffer, canvasCtx, width, height } = props;
     analyser.getByteTimeDomainData(buffer);
     // take 10% of start of buffer
     // const bufferSlice = buffer.length / 5;
@@ -155,7 +155,7 @@ const drawWaveLine = (props: DrawParameters) => {
 }
 
 const drawBars = (props: DrawParameters) => {
-    const { analyser, buffer, canvasCtx, width, height, frameRef } = props;
+    const { analyser, buffer, canvasCtx, width, height } = props;
     const bufferLength = buffer.length;
     analyser.getByteFrequencyData(buffer);
     canvasCtx.fillStyle = "rgb(200 200 200)";

@@ -11,11 +11,11 @@ interface IAudioInformation {
 }
 
 function App() {
-  const [nowPlaying, setNowPlaying] = useState<File|null>();
-  const [playbackPosition, setPlaybackPosition] = useState<number>(0);
-  const [isPaused, setTrackPaused] = useState<Boolean>(true);
+  // const [nowPlaying, setNowPlaying] = useState<File|null>();
+  // const [playbackPosition, setPlaybackPosition] = useState<number>(0);
+  // const [isPaused, setTrackPaused] = useState<Boolean>(true);
   const audioRef = useRef<HTMLMediaElement>(null);
-  const [userInteracted, setUserInteracted] = useState(false);
+  // const [userInteracted, setUserInteracted] = useState(false);
   const [audioInformation, setAudioInformation] = useState<IAudioInformation>();
   const [zenMode, setZenMode] = useState(false);
   
@@ -23,15 +23,15 @@ function App() {
   //   setNowPlaying(clip);
   // }
 
-  const handlePlaybackTimeUpdated = (seconds: number) => {
-    const s = Math.round(seconds);
-    if (s !== playbackPosition)
-      setPlaybackPosition(s);
-  }
+  // const handlePlaybackTimeUpdated = (seconds: number) => {
+  //   const s = Math.round(seconds);
+  //   if (s !== playbackPosition)
+  //     setPlaybackPosition(s);
+  // }
 
-  const handlePlay = (isPaused: Boolean) => {
-    setTrackPaused(isPaused);
-  }
+  // const handlePlay = (isPaused: Boolean) => {
+  //   setTrackPaused(isPaused);
+  // }
 
   // useEffect(() => {
   //   
@@ -62,7 +62,6 @@ function App() {
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    setUserInteracted(true);
   }
 
   const handleDrop = (e: DragEvent<HTMLDivElement>)=> {
@@ -70,7 +69,7 @@ function App() {
     
     const processFile = (f: File) => {
       if (f.type.startsWith('audio/')){
-        setNowPlaying(f);
+        // setNowPlaying(f);
         const url = URL.createObjectURL(f);
         audioRef.current!.src = url;
         connectAudio();
@@ -91,7 +90,7 @@ function App() {
 
     if (e.dataTransfer.items) {
       // Use DataTransferItemList interface to access the file(s)
-      [...e.dataTransfer.items].forEach((item, i) => {
+      [...e.dataTransfer.items].forEach((item) => {
         // If dropped items aren't files, reject them
         if (item.kind === "file") {
           const file = item.getAsFile();
@@ -107,7 +106,7 @@ function App() {
     }
   }
   
-  return <div className="container-fluid vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={e => setZenMode(false)} onMouseLeave={e => setZenMode(true)} >
+  return <div className="container-fluid vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
     {audioInformation && <Visualiser audioContext={audioInformation.audioContext} audioSource={audioInformation.audioSource} zenMode={zenMode}></Visualiser>}
     <div className="fixed-bottom">
       <div className="col">
@@ -116,10 +115,7 @@ function App() {
           controls={!zenMode}
           ref={audioRef}
           autoPlay
-          crossOrigin="anonymous"
-          onPlay={e => handlePlay(false)}
-          onPause={e => handlePlay(true)}
-          onTimeUpdate={e => handlePlaybackTimeUpdated(e.currentTarget.currentTime)} />
+          crossOrigin="anonymous" />
       </div>
     </div>
   </div>;

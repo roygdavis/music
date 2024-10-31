@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Milkdrop } from "./visualisers/milkdrop/Milkdrop"
 import WaveForm from "./visualisers/waveform/WaveForm";
 
