@@ -1,4 +1,4 @@
-import { DragEvent, useEffect, useRef, useState } from 'react';
+import { DragEvent, useRef, useState } from 'react';
 // import { ICueFileInfo } from './types/ITrackInfo';
 // import { Playlist } from './components/Playlist';
 import { Visualiser } from './components/Visualiser';
