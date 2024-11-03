@@ -1,7 +1,8 @@
-import { DragEvent, useRef, useState } from 'react';
+import { DragEvent, useMemo, useRef, useState } from 'react';
 // import { ICueFileInfo } from './types/ITrackInfo';
 // import { Playlist } from './components/Playlist';
 import { Visualiser } from './components/Visualiser';
+import Dropper from './components/Dropper';
 // import { useAudio } from './hooks/useAudio';
 
 
@@ -11,82 +12,38 @@ interface IAudioInformation {
 }
 
 function App() {
-  // const [nowPlaying, setNowPlaying] = useState<File|null>();
-  // const [playbackPosition, setPlaybackPosition] = useState<number>(0);
-  // const [isPaused, setTrackPaused] = useState<Boolean>(true);
   const audioRef = useRef<HTMLMediaElement>(null);
-  // const [userInteracted, setUserInteracted] = useState(false);
   const [audioInformation, setAudioInformation] = useState<IAudioInformation>();
   const [zenMode, setZenMode] = useState(false);
-  
-  // const handleClipChanged = (clip: ICueFileInfo) => {
-  //   setNowPlaying(clip);
-  // }
-
-  // const handlePlaybackTimeUpdated = (seconds: number) => {
-  //   const s = Math.round(seconds);
-  //   if (s !== playbackPosition)
-  //     setPlaybackPosition(s);
-  // }
-
-  // const handlePlay = (isPaused: Boolean) => {
-  //   setTrackPaused(isPaused);
-  // }
-
-  // useEffect(() => {
-  //   
-  //   if (userInteracted)
-  //     connectAudio();
-  // }, [userInteracted]);
-
-  // useEffect(() => {
-  //   const setZenModeOff = () => {
-  //     console.log("setZenModeOff");
-  //     setZenMode(false);
-  //   };
-
-  //   const setZenModeOn = () => {
-  //     console.log("setZenModeOn");
-  //     setZenMode(true);
-  //   }
-    
-  //   window.addEventListener("onmouseleave", setZenModeOn);
-  //   window.addEventListener("onmouseenter", setZenModeOff);
-
-  //   return () => {
-  //     window.removeEventListener("onmouseleave", setZenModeOn);
-  //     window.removeEventListener("onmouseenter", setZenModeOff);
-  //   }
-
-  // }, []);
+  const audioDropped = useMemo(() => audioInformation !== undefined, [audioInformation]);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
   }
 
-  const handleDrop = (e: DragEvent<HTMLDivElement>)=> {
+  const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
-    
+
+    const connectAudio = () => {
+      if (audioRef.current && !audioDropped) {
+        const audioContext = new AudioContext();
+        const analyserNode = audioContext.createAnalyser();
+        const audioSource = audioContext.createMediaElementSource(audioRef.current);
+        audioSource.connect(analyserNode);
+        audioSource.connect(audioContext.destination);
+
+        setAudioInformation({ audioContext, audioSource } as IAudioInformation);
+      }
+    };
+
     const processFile = (f: File) => {
-      if (f.type.startsWith('audio/')){
+      if (f.type.startsWith('audio/')) {
         // setNowPlaying(f);
         const url = URL.createObjectURL(f);
         audioRef.current!.src = url;
         connectAudio();
       }
     }
-
-    const connectAudio = () => {
-        if (audioRef.current) {
-          const audioContext = new AudioContext();
-          const analyserNode = audioContext.createAnalyser();
-          const audioSource = audioContext.createMediaElementSource(audioRef.current);
-          audioSource.connect(analyserNode);
-          audioSource.connect(audioContext.destination);
-
-          setAudioInformation({ audioContext, audioSource } as IAudioInformation);
-        }
-      };
 
     if (e.dataTransfer.items) {
       // Use DataTransferItemList interface to access the file(s)
@@ -105,29 +62,21 @@ function App() {
       });
     }
   }
-  
-  return <div className="container-fluid vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
-    {audioInformation && <Visualiser audioContext={audioInformation.audioContext} audioSource={audioInformation.audioSource} zenMode={zenMode}></Visualiser>}
+
+  return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
+    {audioDropped ? <Visualiser audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode}></Visualiser> : <Dropper />}
     <div className="fixed-bottom">
       <div className="col">
         <audio
-          className='w-100 sticky-bottom'
+          className={`w-100 sticky-bottom ${audioInformation ? "visible" : "invisible"}`}
           controls={!zenMode}
           ref={audioRef}
           autoPlay
-          crossOrigin="anonymous" />
+          crossOrigin="anonymous"
+        />
       </div>
     </div>
   </div>;
 }
-
-//  const discarded = () =><div className="container-fluid vh-100 overflow-hidden p-0">
-//       
-        
-//       <button className={`btn position-absolute top-50 end-0 translate-middle-y text-primary ${zenMode ? "invisible" : "visible"}`} type="button" data-bs-toggle="offcanvas" data-bs-target="#playlistCanvas" aria-controls="playlistCanvas">
-//         <i className="bi bi-box-arrow-in-left"></i>
-//       </button>
-//     </div>
-//     ;
 
 export default App;
