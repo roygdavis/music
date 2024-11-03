@@ -6,7 +6,12 @@ export interface IVisualiserProps {
     zenMode: boolean;
 }
 
-export const Visualiser = (props: IVisualiserProps & { component: FunctionComponent<IVisualiserProps> }) => {
+export type PresetVisualiserProps = IVisualiserProps;
+
+export const Visualiser = (props: IVisualiserProps & { component: FunctionComponent<PresetVisualiserProps> }) => {
     const { zenMode, audioContext, audioSource, component: Component } = props;
-    return <Component zenMode={zenMode} audioContext={audioContext} audioSource={audioSource} />
+
+    return <>
+        <Component zenMode={zenMode} audioContext={audioContext} audioSource={audioSource} />
+    </>
 }

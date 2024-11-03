@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import useSize from "../../../hooks/useSize";
-import { IVisualiserProps } from "../../Visualiser";
+import { PresetVisualiserProps } from "../../Visualiser";
 import { IPresets, Presets } from "../../Presets";
 
 interface DrawParameters {
@@ -17,7 +17,7 @@ interface PresetAction {
     drawCallback: (params: DrawParameters) => void;
 }
 
-const WaveForm = (props: IVisualiserProps) => {
+const WaveForm = (props: PresetVisualiserProps) => {
     const { audioContext, audioSource, zenMode } = props;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
@@ -27,10 +27,9 @@ const WaveForm = (props: IVisualiserProps) => {
     const bufferRef = useRef(new Uint8Array());
     const drawRef = useRef<(props: DrawParameters) => void>(drawBars);
     const [selectedPreset, setSelectedPreset] = useState(0);
-    
     const presets = useMemo(() => {
         return {
-            "waves": {
+            "Waves": {
                 setup: () => {
                     analyserRef.current!.fftSize = 2048;
                     bufferRef.current = new Uint8Array(analyserRef.current!.fftSize);
@@ -38,7 +37,7 @@ const WaveForm = (props: IVisualiserProps) => {
                 },
                 drawCallback: (props: DrawParameters) => drawWaveLine(props)
             } as PresetAction,
-            "bars": {
+            "Bars": {
                 setup: () => {
                     analyserRef.current!.fftSize = 512;
                     bufferRef.current = new Uint8Array(analyserRef.current!.frequencyBinCount);
@@ -62,7 +61,7 @@ const WaveForm = (props: IVisualiserProps) => {
         const draw = () => {
             drawRef.current({ analyser: analyserRef.current!, buffer: bufferRef.current, canvasCtx: canvasCtxRef.current!, width, height, frameRef });
             frameRef.current = requestAnimationFrame(draw);
-        }        
+        }
         draw();
     };
 
@@ -91,16 +90,6 @@ const WaveForm = (props: IVisualiserProps) => {
         }
     });
 
-    // useEffect(() => {
-    //     if (canvasRef.current) {
-    //         console.log(width, height);
-    //         const w = width;
-    //         const h = height;
-    //         canvasRef.current.width = w;
-    //         canvasRef.current.height = h;
-    //     }
-    // }, [width, height]);
-
     return (
         <>
             <canvas
@@ -113,7 +102,7 @@ const WaveForm = (props: IVisualiserProps) => {
                 width={width}
                 height={height}
             />
-            <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={!zenMode} ></Presets>
+            <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={zenMode} ></Presets>
         </>
     );
 };
@@ -123,13 +112,6 @@ export default WaveForm;
 const drawWaveLine = (props: DrawParameters) => {
     const { analyser, buffer, canvasCtx, width, height } = props;
     analyser.getByteTimeDomainData(buffer);
-    // take 10% of start of buffer
-    // const bufferSlice = buffer.length / 5;
-    // take average value of that 10%
-    // const slicedBuffer=buffer.slice(1, bufferSlice);
-    // set background red value based on that
-    // const avg = slicedBuffer.reduce((p, c) => p + c) / bufferSlice*2;
-
     canvasCtx.fillStyle = `rgb(200 200 200)`;
     canvasCtx.fillRect(0, 0, width, height);
     canvasCtx.lineWidth = 2;
@@ -162,11 +144,9 @@ const drawBars = (props: DrawParameters) => {
     canvasCtx.fillRect(0, 0, width, height);
     const barWidth = (width / bufferLength);
     let x = 0;
-    // console.log(bufferLength,buffer.length);
     for (let i = 0; i < bufferLength; i++) {
         const barHeight = Math.round((height / 256) * buffer[i]);
         canvasCtx.fillStyle = `rgb(${barHeight} 0 0)`;
-        // console.log(barHeight);
         canvasCtx.fillRect(
             x,
             height-barHeight/2,

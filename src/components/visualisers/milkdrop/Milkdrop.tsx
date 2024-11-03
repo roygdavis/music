@@ -3,15 +3,9 @@ import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import useSize from '../../../hooks/useSize';
 import { Presets } from '../../Presets';
-import { IVisualiserProps } from '../../Visualiser';
+import { PresetVisualiserProps } from '../../Visualiser';
 
-// export interface IMilkDropProps{
-//     audioSource: MediaElementAudioSourceNode;
-//     audioContext: AudioContext;
-//     zenMode: Boolean;
-// }
-
-export const Milkdrop = (props: IVisualiserProps) => {
+export const Milkdrop = (props: PresetVisualiserProps) => {
     const { audioSource, audioContext, zenMode } = props;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [width, height] = useSize();
@@ -44,9 +38,8 @@ export const Milkdrop = (props: IVisualiserProps) => {
 
     const handlePresetChanged = (i: number) => {
         const presetKeys = Object.keys(presets);
-        // console.log(i, presetKeys.length);
         const p = presets[presetKeys[i]];
-        (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant           
+        (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
     }
 
     const presets = useMemo(() => {
@@ -64,6 +57,6 @@ export const Milkdrop = (props: IVisualiserProps) => {
             width={width}
             height={height}>
         </canvas>
-        <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={!zenMode} ></Presets>
+        <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={zenMode} ></Presets>
     </>;
 }
