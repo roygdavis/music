@@ -3,7 +3,7 @@ import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import useSize from '../../../hooks/useSize';
 import { Presets } from '../../Presets';
-import { IVisualiserProps } from '../../Visualiser';
+import { IVisualiserProps } from '../../../App';
 
 export const Milkdrop = (props: IVisualiserProps) => {
     const { audioSource, audioContext, zenMode } = props;

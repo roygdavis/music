@@ -1,8 +1,13 @@
 import { DragEvent, FunctionComponent, useMemo, useRef, useState } from 'react';
-import { IVisualiserProps, Visualiser } from './components/Visualiser';
 import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
+
+export interface IVisualiserProps {
+  audioContext: AudioContext;
+  audioSource: MediaElementAudioSourceNode;
+  zenMode: boolean;
+}
 
 interface IAudioInformation {
   audioContext: AudioContext;
@@ -94,7 +99,7 @@ function App() {
         </div>
       </div>
     </nav>
-    {audioDropped ? <Visualiser><Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /></Visualiser> : <Dropper />}
+    {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
     <div className="fixed-bottom">
       <div className="col">
         <audio

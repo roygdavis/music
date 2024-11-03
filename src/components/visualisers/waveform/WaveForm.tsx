@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import useSize from "../../../hooks/useSize";
-import { IVisualiserProps } from "../../Visualiser";
 import { IPresets, Presets } from "../../Presets";
+import { IVisualiserProps } from "../../../App";
 
 interface DrawParameters {
     analyser: AnalyserNode;
