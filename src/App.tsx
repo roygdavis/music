@@ -1,10 +1,6 @@
 import { DragEvent, useMemo, useRef, useState } from 'react';
-// import { ICueFileInfo } from './types/ITrackInfo';
-// import { Playlist } from './components/Playlist';
 import { Visualiser } from './components/Visualiser';
 import Dropper from './components/Dropper';
-// import { useAudio } from './hooks/useAudio';
-
 
 interface IAudioInformation {
   audioContext: AudioContext;
