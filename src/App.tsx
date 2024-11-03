@@ -63,7 +63,7 @@ function App() {
     }
   }
 
-  return <div className="container-fluid vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
+  return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
     {audioDropped ? <Visualiser audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode}></Visualiser> : <Dropper />}
     <div className="fixed-bottom">
       <div className="col">
