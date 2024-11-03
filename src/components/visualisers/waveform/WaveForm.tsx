@@ -1,4 +1,4 @@
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo, useCallback } from "react";
 import useSize from "../../../hooks/useSize";
 import { IVisualiserProps } from "../../Visualiser";
 import { IPresets, Presets } from "../../Presets";
@@ -18,7 +18,7 @@ interface PresetAction {
 }
 
 const WaveForm = (props: IVisualiserProps) => {
-    const { audioContext, audioSource, zenMode } = props;
+    const { audioContext, audioSource, zenMode, onPresetChanged } = props;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [width, height] = useSize();
@@ -27,7 +27,7 @@ const WaveForm = (props: IVisualiserProps) => {
     const bufferRef = useRef(new Uint8Array());
     const drawRef = useRef<(props: DrawParameters) => void>(drawBars);
     const [selectedPreset, setSelectedPreset] = useState(0);
-    
+    const presetChangedCallback = useCallback((name: string) => onPresetChanged(name), [selectedPreset]);
     const presets = useMemo(() => {
         return {
             "waves": {
@@ -55,6 +55,7 @@ const WaveForm = (props: IVisualiserProps) => {
         p.setup();
         drawRef.current = p.drawCallback;
         setSelectedPreset(i);
+        presetChangedCallback(presetKeys[i]);
     };
 
     const animate = () => {

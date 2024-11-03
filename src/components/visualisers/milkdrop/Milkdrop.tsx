@@ -12,7 +12,7 @@ import { IVisualiserProps } from '../../Visualiser';
 // }
 
 export const Milkdrop = (props: IVisualiserProps) => {
-    const { audioSource, audioContext, zenMode } = props;
+    const { audioSource, audioContext, zenMode, onPresetChanged } = props;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [width, height] = useSize();
     const visualiserRef = useRef();
@@ -46,7 +46,8 @@ export const Milkdrop = (props: IVisualiserProps) => {
         const presetKeys = Object.keys(presets);
         // console.log(i, presetKeys.length);
         const p = presets[presetKeys[i]];
-        (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant           
+        (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
+        onPresetChanged(presetKeys[i]);
     }
 
     const presets = useMemo(() => {

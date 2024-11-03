@@ -26,6 +26,7 @@ function App() {
   const audioDropped = useMemo(() => audioInformation !== undefined, [audioInformation]);
   const [activeVisualiser, setActiveVisualiser] = useState(0);
   const [trackName, setTrackName] = useState("");
+  const [selectedPreset, setPreset] = useState("");
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -77,19 +78,30 @@ function App() {
     setActiveVisualiser(i);
   }
 
+  const handlePresetChanged = (presetName: string) => {
+    setPreset(presetName);
+  }
+
   return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
     <nav className={`navbar fixed-top navbar-expand ${zenMode && audioDropped ? "invisible" : "visible"}`} data-bs-theme="dark">
       <div className="container-fluid">
-        <span className="navbar-brand mb-0 h1">music.roygdavis.dev</span>
+        {/* <span className="navbar-brand mb-0 h1">music.roygdavis.dev</span> */}
+        <div className="d-flex flex-column float-start text-white">
+          <h3 className="text-start"><i className="bi bi-headphones me-1"></i>music.roygdavis.dev</h3>
+          <p className="text-start me-4">Site by <a href="https://github.com/roygdavis/music" className="text-white">Roy G Davis</a>, using <a href="https://github.com/jberg/butterchurn" className="text-white"> Butterchurn </a>with <i className="text-white bi bi-heart-fill"></i>.</p>
+        </div>
         <ul className="navbar-nav me-auto mb-2 mb-lg-0">
           {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
         </ul>
+        <div className='d-flex me-4'>
+          <span>{selectedPreset}</span>
+        </div>
         <div className='d-flex'>
           <span>{trackName}</span>
         </div>
       </div>
     </nav>
-    {audioDropped ? <Visualiser component={AvailableVisualisers[activeVisualiser].component} audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode}></Visualiser> : <Dropper />}
+    {audioDropped ? <Visualiser onPresetChanged={handlePresetChanged} component={AvailableVisualisers[activeVisualiser].component} audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode}></Visualiser> : <Dropper />}
     <div className="fixed-bottom">
       <div className="col">
         <audio
