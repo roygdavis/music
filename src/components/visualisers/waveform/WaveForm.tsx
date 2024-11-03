@@ -1,6 +1,6 @@
 import { useRef, useEffect, useState, useMemo } from "react";
 import useSize from "../../../hooks/useSize";
-import { PresetVisualiserProps } from "../../Visualiser";
+import { IVisualiserProps } from "../../Visualiser";
 import { IPresets, Presets } from "../../Presets";
 
 interface DrawParameters {
@@ -17,7 +17,7 @@ interface PresetAction {
     drawCallback: (params: DrawParameters) => void;
 }
 
-const WaveForm = (props: PresetVisualiserProps) => {
+const WaveForm = (props: IVisualiserProps) => {
     const { audioContext, audioSource, zenMode } = props;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);

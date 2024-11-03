@@ -1,5 +1,5 @@
 import { DragEvent, FunctionComponent, useMemo, useRef, useState } from 'react';
-import { PresetVisualiserProps, Visualiser } from './components/Visualiser';
+import { IVisualiserProps, Visualiser } from './components/Visualiser';
 import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
@@ -10,7 +10,7 @@ interface IAudioInformation {
 }
 
 interface IVisualiser {
-  component: FunctionComponent<PresetVisualiserProps>;
+  component: FunctionComponent<IVisualiserProps>;
   name: string;
 }
 
@@ -26,6 +26,7 @@ function App() {
   const audioDropped = useMemo(() => audioInformation !== undefined, [audioInformation]);
   const [trackName, setTrackName] = useState("");
   const [activeVisualiser, setActiveVisualiser] = useState(0);
+  const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -93,7 +94,7 @@ function App() {
         </div>
       </div>
     </nav>
-    {audioDropped ? <Visualiser component={AvailableVisualisers[activeVisualiser].component} audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode}></Visualiser> : <Dropper />}
+    {audioDropped ? <Visualiser><Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /></Visualiser> : <Dropper />}
     <div className="fixed-bottom">
       <div className="col">
         <audio

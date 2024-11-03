@@ -1,4 +1,4 @@
-import { FunctionComponent } from "react";
+import { ReactNode } from "react";
 
 export interface IVisualiserProps {
     audioContext: AudioContext;
@@ -6,12 +6,10 @@ export interface IVisualiserProps {
     zenMode: boolean;
 }
 
-export type PresetVisualiserProps = IVisualiserProps;
-
-export const Visualiser = (props: IVisualiserProps & { component: FunctionComponent<PresetVisualiserProps> }) => {
-    const { zenMode, audioContext, audioSource, component: Component } = props;
+export const Visualiser = (props: { children?: ReactNode }) => {
+    const { children } = props;
 
     return <>
-        <Component zenMode={zenMode} audioContext={audioContext} audioSource={audioSource} />
+        {children}
     </>
 }

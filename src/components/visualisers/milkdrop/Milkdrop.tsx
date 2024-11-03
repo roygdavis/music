@@ -3,9 +3,9 @@ import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import useSize from '../../../hooks/useSize';
 import { Presets } from '../../Presets';
-import { PresetVisualiserProps } from '../../Visualiser';
+import { IVisualiserProps } from '../../Visualiser';
 
-export const Milkdrop = (props: PresetVisualiserProps) => {
+export const Milkdrop = (props: IVisualiserProps) => {
     const { audioSource, audioContext, zenMode } = props;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const [width, height] = useSize();
