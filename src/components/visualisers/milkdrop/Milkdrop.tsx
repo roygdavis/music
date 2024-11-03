@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import useSize from '../../../hooks/useSize';
@@ -17,6 +17,8 @@ export const Milkdrop = (props: IVisualiserProps) => {
     const [width, height] = useSize();
     const visualiserRef = useRef();
     const frameRef = useRef(0);
+    const [selectedPreset, setSelectedPreset] = useState(0);
+    const presetChangedCallback = useCallback((name: string) => onPresetChanged(name), [selectedPreset]);
 
     useEffect(() => {
         const connectAudio = () => {
@@ -47,6 +49,7 @@ export const Milkdrop = (props: IVisualiserProps) => {
         // console.log(i, presetKeys.length);
         const p = presets[presetKeys[i]];
         (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
+        setSelectedPreset(i);
         onPresetChanged(presetKeys[i]);
     }
 
@@ -57,6 +60,11 @@ export const Milkdrop = (props: IVisualiserProps) => {
     useEffect(() => {
         visualiserRef.current && (visualiserRef.current as any).setRendererSize(width, height);
     }, [width, height]);
+
+    useEffect(() => {
+        const presetKeys = Object.keys(presets);
+        onPresetChanged(presetKeys[selectedPreset]);
+    });
 
     return <>
         <canvas

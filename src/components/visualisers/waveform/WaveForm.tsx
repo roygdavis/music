@@ -55,7 +55,7 @@ const WaveForm = (props: IVisualiserProps) => {
         p.setup();
         drawRef.current = p.drawCallback;
         setSelectedPreset(i);
-        presetChangedCallback(presetKeys[i]);
+        // presetChangedCallback(presetKeys[i]);
     };
 
     const animate = () => {
@@ -63,7 +63,7 @@ const WaveForm = (props: IVisualiserProps) => {
         const draw = () => {
             drawRef.current({ analyser: analyserRef.current!, buffer: bufferRef.current, canvasCtx: canvasCtxRef.current!, width, height, frameRef });
             frameRef.current = requestAnimationFrame(draw);
-        }        
+        }
         draw();
     };
 
@@ -90,6 +90,11 @@ const WaveForm = (props: IVisualiserProps) => {
         return () => {
             cancelAnimationFrame(frameRef.current);
         }
+    });
+
+    useEffect(() => {
+        const presetKeys = Object.keys(presets);
+        presetChangedCallback(presetKeys[selectedPreset]);
     });
 
     // useEffect(() => {

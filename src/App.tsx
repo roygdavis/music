@@ -90,9 +90,9 @@ function App() {
           <h3 className="text-start"><i className="bi bi-headphones me-1"></i>music.roygdavis.dev</h3>
           <p className="text-start me-4">Site by <a href="https://github.com/roygdavis/music" className="text-white">Roy G Davis</a>, using <a href="https://github.com/jberg/butterchurn" className="text-white"> Butterchurn </a>with <i className="text-white bi bi-heart-fill"></i>.</p>
         </div>
-        <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+        {audioDropped && <ul className="navbar-nav me-auto mb-2 mb-lg-0">
           {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
-        </ul>
+        </ul>}
         <div className='d-flex me-4'>
           <span>{selectedPreset}</span>
         </div>
