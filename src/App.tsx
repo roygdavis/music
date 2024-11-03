@@ -1,17 +1,31 @@
-import { DragEvent, useMemo, useRef, useState } from 'react';
-import { Visualiser } from './components/Visualiser';
+import { DragEvent, FunctionComponent, useMemo, useRef, useState } from 'react';
+import { IVisualiserProps, Visualiser } from './components/Visualiser';
 import Dropper from './components/Dropper';
+import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
+import WaveForm from './components/visualisers/waveform/WaveForm';
 
 interface IAudioInformation {
   audioContext: AudioContext;
   audioSource: MediaElementAudioSourceNode;
 }
 
+interface IVisualiser {
+  component: FunctionComponent<IVisualiserProps>;
+  name: string;
+}
+
+const AvailableVisualisers: IVisualiser[] = [
+  { component: Milkdrop, name: "Milkdrop" },
+  { component: WaveForm, name: "WaveForm" }
+];
+
 function App() {
   const audioRef = useRef<HTMLMediaElement>(null);
   const [audioInformation, setAudioInformation] = useState<IAudioInformation>();
   const [zenMode, setZenMode] = useState(false);
   const audioDropped = useMemo(() => audioInformation !== undefined, [audioInformation]);
+  const [activeVisualiser, setActiveVisualiser] = useState(0);
+  const [trackName, setTrackName] = useState("");
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -34,7 +48,7 @@ function App() {
 
     const processFile = (f: File) => {
       if (f.type.startsWith('audio/')) {
-        // setNowPlaying(f);
+        setTrackName(f.name);
         const url = URL.createObjectURL(f);
         audioRef.current!.src = url;
         connectAudio();
@@ -59,8 +73,23 @@ function App() {
     }
   }
 
+  const handleVisualiserChanged = (i: number) => {
+    setActiveVisualiser(i);
+  }
+
   return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
-    {audioDropped ? <Visualiser audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode}></Visualiser> : <Dropper />}
+    <nav className={`navbar fixed-top navbar-expand ${zenMode && audioDropped ? "invisible" : "visible"}`} data-bs-theme="dark">
+      <div className="container-fluid">
+        <span className="navbar-brand mb-0 h1">music.roygdavis.dev</span>
+        <ul className="navbar-nav me-auto mb-2 mb-lg-0">
+          {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
+        </ul>
+        <div className='d-flex'>
+          <span>{trackName}</span>
+        </div>
+      </div>
+    </nav>
+    {audioDropped ? <Visualiser component={AvailableVisualisers[activeVisualiser].component} audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode}></Visualiser> : <Dropper />}
     <div className="fixed-bottom">
       <div className="col">
         <audio
