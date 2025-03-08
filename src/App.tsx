@@ -2,6 +2,7 @@ import { DragEvent, FunctionComponent, useMemo, useRef, useState } from 'react';
 import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
+import Playlist from './components/Playlist';
 
 export interface IVisualiserProps {
   audioContext: AudioContext;
@@ -94,12 +95,18 @@ function App() {
         {audioDropped && <ul className="navbar-nav me-auto mb-2 mb-lg-0">
           {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
         </ul>}
-        <div className='d-flex'>
-          <span className='text-white'>{trackName}</span>
+        <div className='d-flex flex-row justify-content-end'>
+          <span className='text-white me-2 pt-2'>{trackName}</span>
+          <a className="btn" data-bs-toggle="offcanvas" href="#offcanvasPlaylist" role="button" aria-controls="offcanvasPlaylist">
+            <i className="bi bi-list"></i>
+          </a>
         </div>
       </div>
     </nav>
     {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
+    <div className='position-absolute top-50 end-0'>
+    </div>
+    <Playlist></Playlist>
     <div className="fixed-bottom">
       <div className="col">
         <audio
