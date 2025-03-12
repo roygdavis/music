@@ -1,5 +1,5 @@
 import { DragEvent, FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
-import * as bootstrap from 'bootstrap';
+// import * as bootstrap from 'bootstrap';
 import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
