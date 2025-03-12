@@ -1,7 +1,10 @@
-import { DragEvent, FunctionComponent, useMemo, useRef, useState } from 'react';
+import { DragEvent, FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
+import * as bootstrap from 'bootstrap';
 import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
+import Playlist from './components/Playlist';
+import { BlobServiceClient } from '@azure/storage-blob';
 
 export interface IVisualiserProps {
   audioContext: AudioContext;
@@ -19,6 +22,11 @@ interface IVisualiser {
   name: string;
 }
 
+export interface IBlobItem {
+  name: string;
+  url: string;
+}
+
 const AvailableVisualisers: IVisualiser[] = [
   { component: Milkdrop, name: "Milkdrop" },
   { component: WaveForm, name: "WaveForm" }
@@ -31,7 +39,39 @@ function App() {
   const audioDropped = useMemo(() => audioInformation !== undefined, [audioInformation]);
   const [trackName, setTrackName] = useState("");
   const [activeVisualiser, setActiveVisualiser] = useState(0);
+  const [fileList, setFileList] = useState<IBlobItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
+
+  // useEffect(() => {
+  //   const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="offcanvas"]');
+  //   const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, {
+  //     trigger: 'focus'
+  //   }));
+  //   popoverList.forEach(x => x.show());
+
+  //   // const popover = new bootstrap.Popover('.popover-dismiss', {
+  //   //   trigger: 'focus'
+  //   // });
+  //   // popover.show();
+  // });
+
+  useEffect(() => {
+    const fetchFiles = async () => {
+      const blobServiceClient = new BlobServiceClient('https://rgdmusicstorage.blob.core.windows.net/?sv=2022-11-02&ss=b&srt=co&sp=rltf&se=2026-03-09T05:36:41Z&st=2025-03-08T21:36:41Z&spr=https&sig=w4R8CwEJ2RyOer%2BV4dy%2F2FfaLq21U2DZiobhXvbdktY%3D');
+      const containerClient = blobServiceClient.getContainerClient('music');
+      const blobItems = [];
+
+      for await (const blob of containerClient.listBlobsFlat()) {
+        const blobClient = containerClient.getBlobClient(blob.name);
+        const blobUrl = blobClient.url;
+        blobItems.push({ name: blob.name, url: blobUrl });
+      }
+
+      setFileList(blobItems);
+    };
+
+    fetchFiles();
+  }, []);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -83,6 +123,25 @@ function App() {
     setActiveVisualiser(i);
   }
 
+  const connectAudio = () => {
+    if (audioRef.current && !audioDropped) {
+      const audioContext = new AudioContext();
+      const analyserNode = audioContext.createAnalyser();
+      const audioSource = audioContext.createMediaElementSource(audioRef.current);
+      audioSource.connect(analyserNode);
+      audioSource.connect(audioContext.destination);
+      setAudioInformation({ audioContext, audioSource } as IAudioInformation);
+    }
+  };
+
+  const handleFileChanged = async (blob: IBlobItem) => {
+    if (audioRef.current) {
+      audioRef.current.src = blob.url;
+      audioRef.current.play();
+      connectAudio();
+    }
+  }
+
   return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
     <nav className={`navbar fixed-top navbar-expand ${zenMode && audioDropped ? "invisible" : "visible"}`} data-bs-theme="dark">
       <div className="container-fluid">
@@ -94,12 +153,27 @@ function App() {
         {audioDropped && <ul className="navbar-nav me-auto mb-2 mb-lg-0">
           {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
         </ul>}
-        <div className='d-flex'>
-          <span className='text-white'>{trackName}</span>
+        <div className='d-flex flex-row justify-content-end'>
+          <span className='text-white me-2 pt-2'>{trackName}</span>
+          <a
+            tabIndex={0}
+            className="btn text-white"
+            data-bs-toggle="offcanvas"
+            data-bs-title="NEW! Playlist!"
+            data-bs-content="Click here to see a currated list of mixes by Roy"
+            data-bs-trigger="focus"
+            href="#offcanvasPlaylist"
+            role="button"
+            aria-controls="offcanvasPlaylist">
+            <i className="bi bi-list"></i>
+          </a>
         </div>
       </div>
     </nav>
     {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
+    <div className='position-absolute top-50 end-0'>
+    </div>
+    <Playlist blobs={fileList} onFileChanged={handleFileChanged}></Playlist>
     <div className="fixed-bottom">
       <div className="col">
         <audio
@@ -113,5 +187,4 @@ function App() {
     </div>
   </div>;
 }
-
 export default App;
