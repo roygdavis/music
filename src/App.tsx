@@ -1,6 +1,6 @@
 import { DragEvent, FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
-// import * as bootstrap from 'bootstrap';
-import Dropper from './components/Dropper';
+import * as bootstrap from 'bootstrap';
+// import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
 import Playlist from './components/Playlist';
@@ -41,19 +41,7 @@ function App() {
   const [activeVisualiser, setActiveVisualiser] = useState(0);
   const [fileList, setFileList] = useState<IBlobItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
-
-  // useEffect(() => {
-  //   const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="offcanvas"]');
-  //   const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, {
-  //     trigger: 'focus'
-  //   }));
-  //   popoverList.forEach(x => x.show());
-
-  //   // const popover = new bootstrap.Popover('.popover-dismiss', {
-  //   //   trigger: 'focus'
-  //   // });
-  //   // popover.show();
-  // });
+  const popoverRef = useRef<bootstrap.Popover>();
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -72,6 +60,22 @@ function App() {
 
     fetchFiles();
   }, []);
+
+  useEffect(() => {
+    popoverRef.current = new bootstrap.Popover('.popover-dismiss');
+    console.log(popoverRef.current);
+    popoverRef.current.show();
+
+    const handleClick = () => {
+      popoverRef.current?.hide();
+    };
+
+    document.addEventListener('click', handleClick);
+
+    return () => {
+      document.removeEventListener('click', handleClick);
+    };
+  }, [popoverRef]);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -159,18 +163,16 @@ function App() {
             tabIndex={0}
             className="btn text-white"
             data-bs-toggle="offcanvas"
-            data-bs-title="NEW! Playlist!"
-            data-bs-content="Click here to see a currated list of mixes by Roy"
-            data-bs-trigger="focus"
             href="#offcanvasPlaylist"
             role="button"
             aria-controls="offcanvasPlaylist">
             <i className="bi bi-list"></i>
           </a>
+          <a tabIndex={0} className="btn btn-lg btn-danger popover-dismiss" role="button" data-bs-toggle="popover" data-bs-trigger="manual" data-bs-title="Dismissible popover" data-bs-content="And here's some amazing content. It's very engaging. Right?">Dismissible popover</a>
         </div>
       </div>
     </nav>
-    {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
+    {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <EmptyBackground />}
     <div className='position-absolute top-50 end-0'>
     </div>
     <Playlist blobs={fileList} onFileChanged={handleFileChanged}></Playlist>
@@ -187,4 +189,10 @@ function App() {
     </div>
   </div>;
 }
+
+const EmptyBackground = () => <div className="w-100 d-flex text-center text-bg-dark">
+  <div className="w-100 d-flex p-3 mx-auto flex-column justify-content-center">
+
+  </div>
+</div>
 export default App;

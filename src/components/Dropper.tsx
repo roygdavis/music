@@ -7,7 +7,7 @@ export const Dropper = () => {
                 <p className="lead">Find your audio file, drag & drop it on this page, mesmerise yourself in visual glory.</p>
             </main>
         </div>
-    </div>
+    </div>;
 }
 
 export default Dropper;
