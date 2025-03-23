@@ -1,5 +1,4 @@
 import { DragEvent, FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
-import * as bootstrap from 'bootstrap';
 // import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
@@ -41,7 +40,6 @@ function App() {
   const [activeVisualiser, setActiveVisualiser] = useState(0);
   const [fileList, setFileList] = useState<IBlobItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
-  const [popovers, setPopovers] = useState<bootstrap.Popover[]>();
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -59,28 +57,6 @@ function App() {
     };
 
     fetchFiles();
-  }, []);
-
-  useEffect(() => {
-    const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="popover"]');
-    const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl));
-    popoverList.forEach(x => {
-      x.show();
-      console.log(x);
-    });
-    setPopovers(popoverList);
-    // popoverRef.current.show();
-
-    // const handleClick = () => {
-    //   console.log("hide clicked");
-    //   popoverRef.current!.hide();
-    // };
-
-    // document.addEventListener('click', handleClick);
-
-    // return () => {
-    //   document.removeEventListener('click', handleClick);
-    // };
   }, []);
 
   const handleDragOver = (e: DragEvent<HTMLDivElement>) => {
@@ -165,6 +141,7 @@ function App() {
         </ul>}
         <div className='d-flex flex-row justify-content-end'>
           <span className='text-white me-2 pt-2'>{trackName}</span>
+
           <a
             tabIndex={0}
             className="btn text-white"
@@ -172,16 +149,8 @@ function App() {
             href="#offcanvasPlaylist"
             role="button"
             aria-controls="offcanvasPlaylist">
-            <i className="bi bi-list"></i>
+            Playlist <i className="bi bi-list"></i>
           </a>
-          <a id="instruction-popover"
-            tabIndex={0}
-            className="btn btn-lg btn-danger popover-dismiss"
-            role="button"
-            data-bs-toggle="popover"
-            data-bs-trigger="focus"
-            data-bs-title="Dismissible popover"
-            data-bs-content="And here's some amazing content. It's very engaging. Right?">Dismissible popover</a>
         </div>
       </div>
     </nav>
