@@ -1,6 +1,5 @@
 import { DragEvent, FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
-// import * as bootstrap from 'bootstrap';
-import Dropper from './components/Dropper';
+// import Dropper from './components/Dropper';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
 import Playlist from './components/Playlist';
@@ -41,19 +40,6 @@ function App() {
   const [activeVisualiser, setActiveVisualiser] = useState(0);
   const [fileList, setFileList] = useState<IBlobItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
-
-  // useEffect(() => {
-  //   const popoverTriggerList = document.querySelectorAll('[data-bs-toggle="offcanvas"]');
-  //   const popoverList = [...popoverTriggerList].map(popoverTriggerEl => new bootstrap.Popover(popoverTriggerEl, {
-  //     trigger: 'focus'
-  //   }));
-  //   popoverList.forEach(x => x.show());
-
-  //   // const popover = new bootstrap.Popover('.popover-dismiss', {
-  //   //   trigger: 'focus'
-  //   // });
-  //   // popover.show();
-  // });
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -155,22 +141,20 @@ function App() {
         </ul>}
         <div className='d-flex flex-row justify-content-end'>
           <span className='text-white me-2 pt-2'>{trackName}</span>
+
           <a
             tabIndex={0}
             className="btn text-white"
             data-bs-toggle="offcanvas"
-            data-bs-title="NEW! Playlist!"
-            data-bs-content="Click here to see a currated list of mixes by Roy"
-            data-bs-trigger="focus"
             href="#offcanvasPlaylist"
             role="button"
             aria-controls="offcanvasPlaylist">
-            <i className="bi bi-list"></i>
+            Playlist <i className="bi bi-list"></i>
           </a>
         </div>
       </div>
     </nav>
-    {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
+    {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <EmptyBackground />}
     <div className='position-absolute top-50 end-0'>
     </div>
     <Playlist blobs={fileList} onFileChanged={handleFileChanged}></Playlist>
@@ -187,4 +171,10 @@ function App() {
     </div>
   </div>;
 }
+
+const EmptyBackground = () => <div className="w-100 d-flex text-center text-bg-dark">
+  <div className="w-100 d-flex p-3 mx-auto flex-column justify-content-center">
+
+  </div>
+</div>
 export default App;
