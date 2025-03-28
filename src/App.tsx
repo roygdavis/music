@@ -4,6 +4,7 @@ import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
 import Playlist from './components/Playlist';
 import { BlobServiceClient } from '@azure/storage-blob';
+import Dropper from './components/Dropper';
 
 export interface IVisualiserProps {
   audioContext: AudioContext;
@@ -21,9 +22,10 @@ interface IVisualiser {
   name: string;
 }
 
-export interface IBlobItem {
+export interface ITrackItem {
   name: string;
   url: string;
+  isPlaying: boolean;
 }
 
 const AvailableVisualisers: IVisualiser[] = [
@@ -38,8 +40,9 @@ function App() {
   const audioDropped = useMemo(() => audioInformation !== undefined, [audioInformation]);
   const [trackName, setTrackName] = useState("");
   const [activeVisualiser, setActiveVisualiser] = useState(0);
-  const [fileList, setFileList] = useState<IBlobItem[]>([]);
+  const [fileList, setFileList] = useState<ITrackItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
+  const [audioConnected, setAudioConnected] = useState(false);
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -66,24 +69,16 @@ function App() {
   const handleDrop = (e: DragEvent<HTMLDivElement>) => {
     e.preventDefault();
 
-    const connectAudio = () => {
-      if (audioRef.current && !audioDropped) {
-        const audioContext = new AudioContext();
-        const analyserNode = audioContext.createAnalyser();
-        const audioSource = audioContext.createMediaElementSource(audioRef.current);
-        audioSource.connect(analyserNode);
-        audioSource.connect(audioContext.destination);
-
-        setAudioInformation({ audioContext, audioSource } as IAudioInformation);
-      }
-    };
+    let audioHandled = false;
+    const newFileList = [...fileList];
+    const nextPLayingIndex = newFileList.length;
 
     const processFile = (f: File) => {
       if (f.type.startsWith('audio/')) {
         setTrackName(f.name);
         const url = URL.createObjectURL(f);
-        audioRef.current!.src = url;
-        connectAudio();
+        newFileList.push({ name: f.name, url, isPlaying: false });
+        audioHandled = true;
       }
     }
 
@@ -103,6 +98,13 @@ function App() {
         processFile(file);
       });
     }
+    if (audioHandled) {
+      const lastTrack = newFileList[nextPLayingIndex];
+      lastTrack.isPlaying = true;
+      setFileList(newFileList);
+      audioRef.current!.src = lastTrack.url;
+      connectAudio();
+    }
   }
 
   const handleVisualiserChanged = (i: number) => {
@@ -110,17 +112,18 @@ function App() {
   }
 
   const connectAudio = () => {
-    if (audioRef.current && !audioDropped) {
+    if (audioRef.current && !audioConnected) {
       const audioContext = new AudioContext();
       const analyserNode = audioContext.createAnalyser();
       const audioSource = audioContext.createMediaElementSource(audioRef.current);
       audioSource.connect(analyserNode);
       audioSource.connect(audioContext.destination);
       setAudioInformation({ audioContext, audioSource } as IAudioInformation);
+      setAudioConnected(true);
     }
   };
 
-  const handleFileChanged = async (blob: IBlobItem) => {
+  const handleFileChanged = async (blob: ITrackItem) => {
     if (audioRef.current) {
       audioRef.current.src = blob.url;
       audioRef.current.play();
@@ -154,7 +157,7 @@ function App() {
         </div>
       </div>
     </nav>
-    {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <EmptyBackground />}
+    {audioDropped ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
     <div className='position-absolute top-50 end-0'>
     </div>
     <Playlist blobs={fileList} onFileChanged={handleFileChanged}></Playlist>
@@ -172,9 +175,10 @@ function App() {
   </div>;
 }
 
-const EmptyBackground = () => <div className="w-100 d-flex text-center text-bg-dark">
-  <div className="w-100 d-flex p-3 mx-auto flex-column justify-content-center">
+// const EmptyBackground = () => <div className="w-100 d-flex text-center text-bg-dark">
+//   <div className="w-100 d-flex p-3 mx-auto flex-column justify-content-center">
 
-  </div>
-</div>
+//   </div>
+// </div>
+
 export default App;

@@ -1,12 +1,10 @@
-import { useState } from "react";
-import { IBlobItem } from "../App";
+import { ITrackItem } from "../App";
 
-export const Playlist = (props: { blobs: IBlobItem[], onFileChanged(blob: IBlobItem): void; }) => {
+export const Playlist = (props: { blobs: ITrackItem[], onFileChanged(blob: ITrackItem): void; }) => {
     const { blobs, onFileChanged } = props;
-    const [activeBlob, setActiveBlob] = useState<IBlobItem>();
+    const activeBlob = blobs.find(x => x.isPlaying);
 
-    const handleFileChanged = (blob: IBlobItem) => {
-        setActiveBlob(blob);
+    const handleFileChanged = (blob: ITrackItem) => {
         onFileChanged(blob);
     }
 
