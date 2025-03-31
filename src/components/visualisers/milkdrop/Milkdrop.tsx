@@ -36,19 +36,28 @@ export const Milkdrop = (props: IVisualiserProps) => {
         frameRef.current = requestAnimationFrame(renderFrame);
     };
 
+    const presets = useMemo(() => {
+        const presets = (visualiserRef && visualiserRef.current) ? butterchurnPresets.getPresets() : {};
+        const presetKeys = Object.keys(presets);
+        const p = presets[presetKeys[4]];
+        if (p)
+            (visualiserRef.current as any).loadPreset(p, 0);
+        return presets;
+    }, [visualiserRef.current]);
+
     const handlePresetChanged = (i: number) => {
         const presetKeys = Object.keys(presets);
         const p = presets[presetKeys[i]];
         (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
     }
 
-    const presets = useMemo(() => {
-        return (visualiserRef && visualiserRef.current) ? butterchurnPresets.getPresets() : {};
-    }, [visualiserRef.current]);
-
     useEffect(() => {
         visualiserRef.current && (visualiserRef.current as any).setRendererSize(width, height);
     }, [width, height]);
+
+    useEffect(() => {
+
+    }, [presets]);
 
     return <>
         <canvas
