@@ -4,6 +4,7 @@ import WaveForm from './components/visualisers/waveform/WaveForm';
 import Playlist from './components/Playlist';
 import { BlobServiceClient } from '@azure/storage-blob';
 import Dropper from './components/Dropper';
+import { ICueFileInfo, ITrackInfo } from './types/ITrackInfo';
 
 export interface IVisualiserProps {
   audioContext: AudioContext;
@@ -16,9 +17,6 @@ interface IAudioInformation {
   audioSource: MediaElementAudioSourceNode;
 }
 
-interface ICueFileInfo {
-
-}
 interface IVisualiser {
   component: FunctionComponent<IVisualiserProps>;
   name: string;
@@ -28,6 +26,7 @@ export interface ITrackItem {
   name: string;
   url: string;
   isPlaying: boolean;
+  cueInfo?: ICueFileInfo;
 }
 
 const AvailableVisualisers: IVisualiser[] = [
@@ -45,6 +44,7 @@ function App() {
   const [audioConnected, setAudioConnected] = useState(false);
   const nowPlaying = useMemo(() => playList.find(x => x.isPlaying), [playList]);
   const playlistHasItems = useMemo(() => playList.length > 0, [playList]);
+  const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0);
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -100,7 +100,63 @@ function App() {
       if (f.type.startsWith('audio/')) {
         const url = URL.createObjectURL(f);
         newFileList.push({ name: f.name, url, isPlaying: false });
+        console.log(f.name);
         droppedFilesProcessed = true;
+      }
+      if (f.type === "application/x-cue") {
+        console.log(f);
+        // load cue file if we have a matching audito clip already uploaded
+        const playListItem = newFileList.find(x => x.name.slice(0, x.name.length - 4) === f.name.slice(0, f.name.length - 4));
+        if (playListItem) {
+          f.text()
+            .then(success => {
+              const lines = success.split("\r\n");
+              const cueFileInfo = {
+                rem: [],
+                title: "",
+                performer: "",
+                file: "",
+                tracks: [],
+                playbackPosition: null
+              } as ICueFileInfo;
+              lines.forEach(line => {
+                if (line.startsWith("REM DATE"))
+                  cueFileInfo.rem.push(line.slice(9));
+                if (line.startsWith("REM RECORDED_BY"))
+                  cueFileInfo.rem.push(line.slice(16));
+                if (line.startsWith("TITLE"))
+                  cueFileInfo.title = line.slice(7);
+                if (line.startsWith("PERFORMER"))
+                  cueFileInfo.performer = line.slice(10);
+                if (line.startsWith("\t") && !line.startsWith("\t\t"))
+                  cueFileInfo.tracks.push({} as ITrackInfo);
+                if (line.startsWith("\t\tTITLE")) {
+                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+                  t.title = line;
+                }
+                if (line.startsWith("\t\tPERFORMER")) {
+                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+                  t.artist = line;
+                }
+                if (line.startsWith("\t\tFILE")) {
+                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+                  t.file = line;
+                }
+                if (line.startsWith("\t\tINDEX")) {
+                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+                  const timeString = line.substring(11);
+                  const h = Number.parseInt(timeString.slice(0, 2));
+                  const m = Number.parseInt(timeString.slice(3, 5));
+                  const s = Number.parseInt(timeString.slice(6, 8));
+                  t.timeIndex = s + (m * 60) + (h * 60 * 60);
+                }
+              });
+              playListItem.cueInfo = cueFileInfo;
+            })
+            .catch(error => {
+              console.log(error);
+            })
+        }
       }
     }
 
@@ -144,6 +200,11 @@ function App() {
     }
   }
 
+  const handlePlaybackPositionChanged = (n: number) => {
+    setCurrentPlaybackPosition(n);
+    console.log(n);
+  }
+
   return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
     <nav className={`navbar fixed-top navbar-expand ${zenMode && playlistHasItems ? "invisible" : "visible"}`} data-bs-theme="dark">
       <div className="container-fluid">
@@ -171,7 +232,8 @@ function App() {
       </div>
     </nav>
     {audioConnected ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
-    <div className='position-absolute top-50 end-0'>
+    <div className='position-absolute top-50 end-50 text-white'>
+      {nowPlaying?.cueInfo?.tracks.find(x => x.timeIndex > currentPlaybackPosition)?.title}
     </div>
     <Playlist blobs={playList} onFileChanged={handleFileChanged}></Playlist>
     <div className="fixed-bottom">
@@ -182,6 +244,8 @@ function App() {
           ref={audioRef}
           autoPlay
           crossOrigin="anonymous"
+          onProgress={e => handlePlaybackPositionChanged(e.currentTarget.currentTime)}
+          onTimeUpdate={e => handlePlaybackPositionChanged(e.currentTarget.currentTime)}
         />
       </div>
     </div>
