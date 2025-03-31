@@ -132,15 +132,15 @@ function App() {
                   cueFileInfo.tracks.push({} as ITrackInfo);
                 if (line.startsWith("\t\tTITLE")) {
                   const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
-                  t.title = line;
+                  t.title = line.substring(8);
                 }
                 if (line.startsWith("\t\tPERFORMER")) {
                   const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
-                  t.artist = line;
+                  t.artist = line.substring(12);
                 }
                 if (line.startsWith("\t\tFILE")) {
                   const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
-                  t.file = line;
+                  t.file = line.substring(7);
                 }
                 if (line.startsWith("\t\tINDEX")) {
                   const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
