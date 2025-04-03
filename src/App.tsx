@@ -29,6 +29,9 @@ export interface ITrackItem {
   cueInfo?: ICueFileInfo;
 }
 
+type CueFile = { name: string; content: string };
+type CueFiles = CueFile[];
+
 const AvailableVisualisers: IVisualiser[] = [
   { component: Milkdrop, name: "Milkdrop" },
   { component: WaveForm, name: "WaveForm" }
@@ -51,14 +54,29 @@ function App() {
       try {
         const blobServiceClient = new BlobServiceClient('https://rgdmusicstorage.blob.core.windows.net/?sv=2022-11-02&ss=b&srt=co&sp=rltf&se=2026-03-09T05:36:41Z&st=2025-03-08T21:36:41Z&spr=https&sig=w4R8CwEJ2RyOer%2BV4dy%2F2FfaLq21U2DZiobhXvbdktY%3D');
         const containerClient = blobServiceClient.getContainerClient('music');
-        const blobItems = [] as ITrackItem[];
+        const audioFiles: ITrackItem[] = [];
+        const cueFiles: CueFiles = [];
 
         for await (const blob of containerClient.listBlobsFlat()) {
           const blobClient = containerClient.getBlobClient(blob.name);
           const blobUrl = blobClient.url;
-          blobItems.push({ name: blob.name, url: blobUrl, isPlaying: false });
+
+          if (blob.name.endsWith('.mp3') || blob.name.endsWith('.wav')) {
+            // Add audio files to the list
+            audioFiles.push({ name: blob.name, url: blobUrl, isPlaying: false });
+          } else if (blob.name.endsWith('.cue')) {
+            // Fetch and store cue file content
+            const response = await blobClient.download();
+            const blobBody = await response.blobBody;
+            const text = await blobBody?.text();
+            if (text) {
+              cueFiles.push({ name: blob.name, content: text });
+            }
+          }
         }
-        return blobItems;
+
+        parseCueFile(cueFiles, audioFiles);
+        return audioFiles;
       } catch {
         throw "";
       }
@@ -67,7 +85,6 @@ function App() {
     fetchFiles()
       .then(success => {
         setPlayList(success);
-
       })
       .catch(error => {
         console.log("Error getting playlist from cdn");
@@ -100,63 +117,20 @@ function App() {
       if (f.type.startsWith('audio/')) {
         const url = URL.createObjectURL(f);
         newFileList.push({ name: f.name, url, isPlaying: false });
-        console.log(f.name);
         droppedFilesProcessed = true;
       }
       if (f.type === "application/x-cue") {
-        console.log(f);
         // load cue file if we have a matching audito clip already uploaded
-        const playListItem = newFileList.find(x => x.name.slice(0, x.name.length - 4) === f.name.slice(0, f.name.length - 4));
-        if (playListItem) {
-          f.text()
-            .then(success => {
-              const lines = success.split("\r\n");
-              const cueFileInfo = {
-                rem: [],
-                title: "",
-                performer: "",
-                file: "",
-                tracks: [],
-                playbackPosition: null
-              } as ICueFileInfo;
-              lines.forEach(line => {
-                if (line.startsWith("REM DATE"))
-                  cueFileInfo.rem.push(line.slice(9));
-                if (line.startsWith("REM RECORDED_BY"))
-                  cueFileInfo.rem.push(line.slice(16));
-                if (line.startsWith("TITLE"))
-                  cueFileInfo.title = line.slice(7);
-                if (line.startsWith("PERFORMER"))
-                  cueFileInfo.performer = line.slice(10);
-                if (line.startsWith("\t") && !line.startsWith("\t\t"))
-                  cueFileInfo.tracks.push({} as ITrackInfo);
-                if (line.startsWith("\t\tTITLE")) {
-                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
-                  t.title = line.substring(8);
-                }
-                if (line.startsWith("\t\tPERFORMER")) {
-                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
-                  t.artist = line.substring(12);
-                }
-                if (line.startsWith("\t\tFILE")) {
-                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
-                  t.file = line.substring(7);
-                }
-                if (line.startsWith("\t\tINDEX")) {
-                  const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
-                  const timeString = line.substring(11);
-                  const h = Number.parseInt(timeString.slice(0, 2));
-                  const m = Number.parseInt(timeString.slice(3, 5));
-                  const s = Number.parseInt(timeString.slice(6, 8));
-                  t.timeIndex = s + (m * 60) + (h * 60 * 60);
-                }
-              });
-              playListItem.cueInfo = cueFileInfo;
-            })
-            .catch(error => {
-              console.log(error);
-            })
-        }
+        // const playListItem = newFileList.find(x => x.name.slice(0, x.name.length - 4) === f.name.slice(0, f.name.length - 4));
+        // if (playListItem) {
+        f.text()
+          .then(success => {
+            setPlayList(parseCueFile([{ name: f.name, content: success }], newFileList));
+          })
+          .catch(error => {
+            console.log(error);
+          })
+        // }
       }
     }
 
@@ -177,12 +151,13 @@ function App() {
         processFile(file);
       });
     }
-    if (droppedFilesProcessed) {
-      setPlayList(newFileList);
+    if (droppedFilesProcessed && !newFileList.some(x => x.isPlaying)) {
       if (newFileList.length === 1) {
-        const track = newFileList[0];
+        const track = newFileList[newFileList.length - 1];
         track.isPlaying = true;
         audioRef.current!.src = track.url;
+        audioRef.current!.play();
+        setPlayList([...newFileList]);
       }
       connectAudio();
     }
@@ -196,13 +171,16 @@ function App() {
     if (audioRef.current) {
       audioRef.current.src = blob.url;
       audioRef.current.play();
+      const newFileList = [...playList];
+      newFileList.forEach(x => x.isPlaying = false);
+      blob.isPlaying = true;
+      setPlayList(newFileList);
       connectAudio();
     }
   }
 
   const handlePlaybackPositionChanged = (n: number) => {
     setCurrentPlaybackPosition(n);
-    console.log(n);
   }
 
   return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
@@ -213,10 +191,13 @@ function App() {
           <h3 className="text-start"><i className="bi bi-headphones me-1"></i>music.roygdavis.dev</h3>
           <p className="text-start me-4">Site by <a href="https://github.com/roygdavis/music" className="text-white">Roy G Davis</a>, using <a href="https://github.com/jberg/butterchurn" className="text-white"> Butterchurn </a>with <i className="text-white bi bi-heart-fill"></i></p>
         </div>
-        {playlistHasItems && <ul className="navbar-nav me-auto mb-2 mb-lg-0">
-          {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
-        </ul>}
-        <div className='d-flex flex-row justify-content-end'>
+        <div className='d-flex flex-row justify-content-between'>
+          {playlistHasItems && <ul className="navbar-nav">
+            {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
+          </ul>}
+          <span className='text-white me-auto"'>{nowPlaying?.cueInfo?.tracks[(nowPlaying?.cueInfo?.tracks.findIndex(x => x.timeIndex > currentPlaybackPosition) ?? 1) - 1]?.title}</span>
+          {/* </div>
+        <div className='d-flex flex-row justify-content-end'> */}
           <span className='text-white me-2 pt-2'>{nowPlaying?.name}</span>
 
           <a
@@ -233,7 +214,7 @@ function App() {
     </nav>
     {audioConnected ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
     <div className='position-absolute top-50 end-50 text-white'>
-      {nowPlaying?.cueInfo?.tracks.find(x => x.timeIndex > currentPlaybackPosition)?.title}
+
     </div>
     <Playlist blobs={playList} onFileChanged={handleFileChanged}></Playlist>
     <div className="fixed-bottom">
@@ -252,6 +233,59 @@ function App() {
   </div>;
 }
 
+const parseCueFile = (cueFiles: CueFiles, audioFiles: ITrackItem[]): ITrackItem[] => {
+  cueFiles.forEach(cueFile => {
+    const baseName = cueFile.name.slice(0, -4); // Remove ".cue"
+    const matchingAudio = audioFiles.find(audio => audio.name.startsWith(baseName));
+    if (matchingAudio) {
+      const lines = cueFile.content.split("\r\n");
+      const cueFileInfo = {
+        rem: [],
+        title: "",
+        performer: "",
+        file: "",
+        tracks: [],
+        playbackPosition: null
+      } as ICueFileInfo;
+
+      lines.forEach(line => {
+        if (line.startsWith("REM DATE"))
+          cueFileInfo.rem.push(line.slice(9));
+        if (line.startsWith("REM RECORDED_BY"))
+          cueFileInfo.rem.push(line.slice(16));
+        if (line.startsWith("TITLE"))
+          cueFileInfo.title = line.slice(7);
+        if (line.startsWith("PERFORMER"))
+          cueFileInfo.performer = line.slice(10);
+        if (line.startsWith("\t") && !line.startsWith("\t\t"))
+          cueFileInfo.tracks.push({} as ITrackInfo);
+        if (line.startsWith("\t\tTITLE")) {
+          const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+          t.title = line.substring(8);
+        }
+        if (line.startsWith("\t\tPERFORMER")) {
+          const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+          t.artist = line.substring(12);
+        }
+        if (line.startsWith("\t\tFILE")) {
+          const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+          t.file = line.substring(7);
+        }
+        if (line.startsWith("\t\tINDEX")) {
+          const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
+          const timeString = line.substring(11);
+          const h = Number.parseInt(timeString.slice(0, 2));
+          const m = Number.parseInt(timeString.slice(3, 5));
+          const s = Number.parseInt(timeString.slice(6, 8));
+          t.timeIndex = s + (m * 60) + (h * 60 * 60);
+        }
+      });
+
+      matchingAudio.cueInfo = cueFileInfo;
+    }
+  });
+  return [...audioFiles];
+}
 // const EmptyBackground = () => <div className="w-100 d-flex text-center text-bg-dark">
 //   <div className="w-100 d-flex p-3 mx-auto flex-column justify-content-center">
 
