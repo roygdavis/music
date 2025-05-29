@@ -5,6 +5,7 @@ export const Dropper = () => {
             <main className="px-3">
                 <h1>Drop it like it's hot</h1>
                 <p className="lead">Find your audio file, drag & drop it on this page, mesmerise yourself in visual glory.</p>
+                <p>Or hit the playlist icon in the top-right corner to listen to my own mixes.</p>
             </main>
         </div>
     </div>;

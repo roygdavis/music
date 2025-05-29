@@ -20,7 +20,7 @@ export const Presets = (props: { availablePresets: IPresets, zenMode: boolean, o
     return <div id="fadingcarouselforpresets" className={`fixed-bottom carousel slide carousel-fade ${zenMode ? "invisible" : "visible"}`} style={{ marginBottom: "5em" }}>
         <div className="carousel-inner">
             {Object.keys(availablePresets).map((x, i) =>
-                <div key={`car-viz-item-${i}`} className={`d-flex justify-content-center text-white carousel-item${i === current ? " active" : ""}`}>
+                <div key={`car-viz-item-${i}`} className={`d-flex justify-content-center text-white carousel-item ${i === current ? "active" : "invisible"}`}>
                     <span>{x}</span>
                 </div>
             )}
