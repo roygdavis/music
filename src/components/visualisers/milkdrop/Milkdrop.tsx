@@ -6,66 +6,70 @@ import { Presets } from '../../Presets';
 import { IVisualiserProps } from '../../../App';
 
 export const Milkdrop = (props: IVisualiserProps) => {
-    const { audioSource, audioContext, zenMode } = props;
-    const canvasRef = useRef<HTMLCanvasElement | null>(null);
-    const [width, height] = useSize();
-    const visualiserRef = useRef();
-    const frameRef = useRef(0);
+  const { audioSource, audioContext, zenMode, nowPlayingInfo } = props;
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [width, height] = useSize();
+  const visualiserRef = useRef();
+  const frameRef = useRef(0);
 
-    useEffect(() => {
-        const connectAudio = () => {
-            const visualiser = butterchurn.createVisualizer(audioContext, canvasRef.current, {
-                width: width,
-                height: height,
-            });
-            visualiser.connectAudio(audioSource);
-            visualiserRef.current = visualiser;
-            renderFrame();
-        };
-        if (!audioContext && !audioSource)
-            return;
-        connectAudio();
-        return () => {
-            visualiserRef.current = undefined;
-            cancelAnimationFrame(frameRef.current);
-        };
-    }, [audioSource, audioContext]);
-    
-    const renderFrame = () => {
-        visualiserRef.current && (visualiserRef.current as any).render();
-        frameRef.current = requestAnimationFrame(renderFrame);
+  useEffect(() => {
+    const connectAudio = () => {
+      const visualiser = butterchurn.createVisualizer(audioContext, canvasRef.current, {
+        width: width,
+        height: height,
+      });
+      visualiser.connectAudio(audioSource);
+      visualiserRef.current = visualiser;
+      renderFrame();
     };
+    if (!audioContext && !audioSource)
+      return;
+    connectAudio();
+    return () => {
+      visualiserRef.current = undefined;
+      cancelAnimationFrame(frameRef.current);
+    };
+  }, [audioSource, audioContext]);
 
-    const presets = useMemo(() => {
-        const presets = (visualiserRef && visualiserRef.current) ? butterchurnPresets.getPresets() : {};
-        const presetKeys = Object.keys(presets);
-        const p = presets[presetKeys[4]];
-        if (p)
-            (visualiserRef.current as any).loadPreset(p, 0);
-        return presets;
-    }, [visualiserRef.current]);
+  useEffect(() => {
+    visualiserRef.current && (visualiserRef.current as any).launchSongTitleAnim(nowPlayingInfo.currentTrack ?? "Unknown Track");
+  }, [nowPlayingInfo]);
+    
+  const renderFrame = () => {
+    visualiserRef.current && (visualiserRef.current as any).render();
+    frameRef.current = requestAnimationFrame(renderFrame);
+  };
 
-    const handlePresetChanged = (i: number) => {
-        const presetKeys = Object.keys(presets);
-        const p = presets[presetKeys[i]];
-        (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
-    }
+  const presets = useMemo(() => {
+    const presets = (visualiserRef && visualiserRef.current) ? butterchurnPresets.getPresets() : {};
+    const presetKeys = Object.keys(presets);
+    const p = presets[presetKeys[4]];
+    if (p)
+      (visualiserRef.current as any).loadPreset(p, 0);
+    return presets;
+  }, [visualiserRef.current]);
 
-    useEffect(() => {
-        visualiserRef.current && (visualiserRef.current as any).setRendererSize(width, height);
-    }, [width, height]);
+  const handlePresetChanged = (i: number) => {
+    const presetKeys = Object.keys(presets);
+    const p = presets[presetKeys[i]];
+    (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
+  }
 
-    useEffect(() => {
+  useEffect(() => {
+    visualiserRef.current && (visualiserRef.current as any).setRendererSize(width, height);
+  }, [width, height]);
 
-    }, [presets]);
+  useEffect(() => {
 
-    return <>
-        <canvas
-            className="min-vw-100 min-vh-100"
-            ref={canvasRef}
-            width={width}
-            height={height}>
-        </canvas>
-        <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={zenMode} ></Presets>
-    </>;
+  }, [presets]);
+
+  return <>
+    <canvas
+      className="min-vw-100 min-vh-100"
+      ref={canvasRef}
+      width={width}
+      height={height}>
+    </canvas>
+    <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={zenMode} ></Presets>
+  </>;
 }

@@ -6,10 +6,17 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import Dropper from './components/Dropper';
 import { ICueFileInfo, ITrackInfo } from './types/ITrackInfo';
 
+export interface INowPlaying {
+  currentTrack: string | null;
+  // playbackPosition: number | null;
+  currentAlbum: string | null;
+}
+
 export interface IVisualiserProps {
   audioContext: AudioContext;
   audioSource: MediaElementAudioSourceNode;
   zenMode: boolean;
+  nowPlayingInfo: INowPlaying;
 }
 
 interface IAudioInformation {
@@ -45,9 +52,25 @@ function App() {
   const [playList, setPlayList] = useState<ITrackItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
   const [audioConnected, setAudioConnected] = useState(false);
-  const nowPlaying = useMemo(() => playList.find(x => x.isPlaying), [playList]);
+  const [nowPlaying, setNowPlaying] = useState<INowPlaying>({ currentTrack: null, playbackPosition: null, currentAlbum: null });
   const playlistHasItems = useMemo(() => playList.length > 0, [playList]);
   const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0);
+
+  useEffect(() => {
+    const playing = playList.find(x => x.isPlaying);
+    if (playing && currentPlaybackPosition !== null) {
+      const track = playing.cueInfo?.tracks[(playing.cueInfo?.tracks.findIndex(x => x.timeIndex > currentPlaybackPosition) ?? 1) - 1]?.title ?? "Unknown Track";
+      const previousTrack = nowPlaying.currentTrack ?? "Unknown Track";
+      if (track !== previousTrack) {
+        const np = {
+          currentTrack: track,
+          // playbackPosition: currentPlaybackPosition,
+          currentAlbum: playing.name
+        } as INowPlaying;
+        setNowPlaying(np);
+      }
+    }
+  }, [currentPlaybackPosition, playList, nowPlaying]);
 
   useEffect(() => {
     const fetchFiles = async () => {
@@ -87,7 +110,7 @@ function App() {
         setPlayList(success);
       })
       .catch(error => {
-        console.log("Error getting playlist from cdn");
+        console.log("Error getting playlist from cdn:", error);
       });
   }, []);
 
@@ -195,10 +218,10 @@ function App() {
           {playlistHasItems && <ul className="navbar-nav">
             {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
           </ul>}
-          <span className='text-white me-auto"'>{nowPlaying?.cueInfo?.tracks[(nowPlaying?.cueInfo?.tracks.findIndex(x => x.timeIndex > currentPlaybackPosition) ?? 1) - 1]?.title}</span>
+          <span className='text-white me-auto"'>{nowPlaying.currentTrack ?? ""}</span>
           {/* </div>
         <div className='d-flex flex-row justify-content-end'> */}
-          <span className='text-white me-2 pt-2'>{nowPlaying?.name}</span>
+          <span className='text-white me-2 pt-2'>{nowPlaying.currentAlbum}</span>
 
           <a
             tabIndex={0}
@@ -212,7 +235,14 @@ function App() {
         </div>
       </div>
     </nav>
-    {audioConnected ? <Component audioContext={audioInformation!.audioContext} audioSource={audioInformation!.audioSource} zenMode={zenMode} /> : <Dropper />}
+    {audioConnected
+      ? <Component
+        audioContext={audioInformation!.audioContext}
+        audioSource={audioInformation!.audioSource}
+        zenMode={zenMode}
+        nowPlayingInfo={nowPlaying}
+      />
+      : <Dropper />}
     <div className='position-absolute top-50 end-50 text-white'>
 
     </div>
