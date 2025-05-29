@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
 import butterchurn from 'butterchurn';
+// import type { Visualizer } from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import useSize from '../../../hooks/useSize';
 import { Presets } from '../../Presets';
@@ -9,12 +10,12 @@ export const Milkdrop = (props: IVisualiserProps) => {
   const { audioSource, audioContext, zenMode, nowPlayingInfo } = props;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [width, height] = useSize();
-  const visualiserRef = useRef();
+  const visualiserRef = useRef<butterchurn.Visualizer>();
   const frameRef = useRef(0);
 
   useEffect(() => {
     const connectAudio = () => {
-      const visualiser = butterchurn.createVisualizer(audioContext, canvasRef.current, {
+      const visualiser = butterchurn.createVisualizer(audioContext, canvasRef.current!, {
         width: width,
         height: height,
       });
@@ -32,11 +33,21 @@ export const Milkdrop = (props: IVisualiserProps) => {
   }, [audioSource, audioContext]);
 
   useEffect(() => {
-    visualiserRef.current && (visualiserRef.current as any).launchSongTitleAnim(nowPlayingInfo.currentTrack ?? "Unknown Track");
+    const handler = setTimeout(() => {
+      if (visualiserRef.current && frameRef.current) {
+        const viz = visualiserRef.current as butterchurn.Visualizer;
+        viz.launchSongTitleAnim(nowPlayingInfo.currentTrack ?? "Unknown Track");
+      }
+    }, 1500);
+
+    return () => {
+      clearTimeout(handler);
+    };
+
   }, [nowPlayingInfo]);
     
   const renderFrame = () => {
-    visualiserRef.current && (visualiserRef.current as any).render();
+    visualiserRef.current && (visualiserRef.current as butterchurn.Visualizer).render();
     frameRef.current = requestAnimationFrame(renderFrame);
   };
 
@@ -45,18 +56,18 @@ export const Milkdrop = (props: IVisualiserProps) => {
     const presetKeys = Object.keys(presets);
     const p = presets[presetKeys[4]];
     if (p)
-      (visualiserRef.current as any).loadPreset(p, 0);
+      (visualiserRef.current as butterchurn.Visualizer).loadPreset(p, 0);
     return presets;
   }, [visualiserRef.current]);
 
   const handlePresetChanged = (i: number) => {
     const presetKeys = Object.keys(presets);
     const p = presets[presetKeys[i]];
-    (visualiserRef.current as any).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
+    (visualiserRef.current as butterchurn.Visualizer).loadPreset(p, 3); // 2nd argument is the number of seconds to blend presets, 0 = instant
   }
 
   useEffect(() => {
-    visualiserRef.current && (visualiserRef.current as any).setRendererSize(width, height);
+    visualiserRef.current && (visualiserRef.current as butterchurn.Visualizer).setRendererSize(width, height);
   }, [width, height]);
 
   useEffect(() => {
