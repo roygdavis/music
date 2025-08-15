@@ -52,7 +52,7 @@ function App() {
   const [playList, setPlayList] = useState<ITrackItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
   const [audioConnected, setAudioConnected] = useState(false);
-  const [nowPlaying, setNowPlaying] = useState<INowPlaying>({ currentTrack: null, playbackPosition: null, currentAlbum: null });
+  const [nowPlaying, setNowPlaying] = useState<INowPlaying>({ currentTrack: null, currentAlbum: null });
   const playlistHasItems = useMemo(() => playList.length > 0, [playList]);
   const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0);
 
