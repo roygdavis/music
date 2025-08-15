@@ -1,10 +1,14 @@
-import { ITrackItem } from "../App";
+import { useContext } from "react";
+import { AppContext } from "../App";
+import { IAlbumItem } from "../types/AlbumTypes";
 
-export const Playlist = (props: { blobs: ITrackItem[], onFileChanged(blob: ITrackItem): void; }) => {
-    const { blobs, onFileChanged } = props;
+export const Playlist = (props: { onFileChanged(blob: IAlbumItem): void; }) => {
+    const context = useContext(AppContext);
+    const blobs = context?.albums ?? [];
+    const { onFileChanged } = props;
     const activeBlob = blobs.find(x => x.isPlaying);
 
-    const handleFileChanged = (blob: ITrackItem) => {
+    const handleFileChanged = (blob: IAlbumItem) => {
         onFileChanged(blob);
     }
 

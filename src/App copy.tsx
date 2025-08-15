@@ -4,7 +4,7 @@ import WaveForm from './components/visualisers/waveform/WaveForm';
 import Playlist from './components/Playlist';
 import { BlobServiceClient } from '@azure/storage-blob';
 import Dropper from './components/Dropper';
-import { ICueFileInfo, ITrackInfo } from './types/ITrackInfo';
+import { ICueFileInfo, ITrackInfo } from './types/CueFileTypes';
 
 export interface INowPlaying {
   currentTrack: string | null;

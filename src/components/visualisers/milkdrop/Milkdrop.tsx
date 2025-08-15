@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useRef } from 'react';
+import { useContext, useEffect, useMemo, useRef } from 'react';
 import butterchurn from 'butterchurn';
 // import type { Visualizer } from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import useSize from '../../../hooks/useSize';
 import { Presets } from '../../Presets';
-import { IVisualiserProps } from '../../../App';
+import { AppContext } from '../../../App';
 
-export const Milkdrop = (props: IVisualiserProps) => {
-  const { audioSource, audioContext, zenMode, nowPlayingInfo } = props;
+
+export const Milkdrop = () => {
+  const context = useContext(AppContext);
+  const audioInformation = context?.audioInformation;
+  const nowPlaying = context?.playback;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [width, height] = useSize();
   const visualiserRef = useRef<butterchurn.Visualizer>();
@@ -15,28 +18,28 @@ export const Milkdrop = (props: IVisualiserProps) => {
 
   useEffect(() => {
     const connectAudio = () => {
-      const visualiser = butterchurn.createVisualizer(audioContext, canvasRef.current!, {
+      const visualiser = butterchurn.createVisualizer(audioInformation!.audioContext, canvasRef.current!, {
         width: width,
         height: height,
       });
-      visualiser.connectAudio(audioSource);
+      visualiser.connectAudio(audioInformation!.audioSource);
       visualiserRef.current = visualiser;
       renderFrame();
     };
-    if (!audioContext && !audioSource)
+    if (!audioInformation?.audioContext && !audioInformation?.audioSource)
       return;
     connectAudio();
     return () => {
       visualiserRef.current = undefined;
       cancelAnimationFrame(frameRef.current);
     };
-  }, [audioSource, audioContext]);
+  }, [audioInformation?.audioSource, audioInformation?.audioContext]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       if (visualiserRef.current && frameRef.current) {
         const viz = visualiserRef.current as butterchurn.Visualizer;
-        viz.launchSongTitleAnim(nowPlayingInfo.currentTrack ?? "Unknown Track");
+        viz.launchSongTitleAnim(nowPlaying?.currentTrack ?? "Unknown Track");
       }
     }, 1500);
 
@@ -44,7 +47,7 @@ export const Milkdrop = (props: IVisualiserProps) => {
       clearTimeout(handler);
     };
 
-  }, [nowPlayingInfo]);
+  }, [nowPlaying]);
     
   const renderFrame = () => {
     visualiserRef.current && (visualiserRef.current as butterchurn.Visualizer).render();
@@ -81,6 +84,6 @@ export const Milkdrop = (props: IVisualiserProps) => {
       width={width}
       height={height}>
     </canvas>
-    <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={zenMode} ></Presets>
+    <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={false} ></Presets>
   </>;
 }

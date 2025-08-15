@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo, useContext } from "react";
 import useSize from "../../../hooks/useSize";
 import { IPresets, Presets } from "../../Presets";
-import { IVisualiserProps } from "../../../App";
+import { AppContext } from "../../../App";
 
 interface DrawParameters {
     analyser: AnalyserNode;
@@ -17,8 +17,9 @@ interface PresetAction {
     drawCallback: (params: DrawParameters) => void;
 }
 
-const WaveForm = (props: IVisualiserProps) => {
-    const { audioContext, audioSource, zenMode } = props;
+const WaveForm = () => {
+    const context = useContext(AppContext);
+    const audioInformation = context?.audioInformation;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [width, height] = useSize();
@@ -66,8 +67,8 @@ const WaveForm = (props: IVisualiserProps) => {
     };
 
     useEffect(() => {
-        const analyser = audioContext.createAnalyser();
-        audioSource.connect(analyser);
+        const analyser = audioInformation!.audioContext.createAnalyser();
+        audioInformation!.audioSource.connect(analyser);
         analyserRef.current = analyser;
         if (canvasRef && canvasRef.current) {
             canvasCtxRef.current = canvasRef.current.getContext("2d");

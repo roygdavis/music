@@ -3,11 +3,11 @@ export interface ICueFileInfo {
     title: string;
     performer: string;
     file: string;
-    tracks: ITrackInfo[];
+    tracks: ICueFileTrackInfo[];
     playbackPosition?: number | null;
 }
 
-export interface ITrackInfo {
+export interface ICueFileTrackInfo {
     trackNumber: number;
     title: string;
     file: string;

@@ -1,40 +1,15 @@
-import { DragEvent, FunctionComponent, useEffect, useMemo, useRef, useState } from 'react';
+import { DragEvent, useEffect, useMemo, useRef, useState } from 'react';
 import { Milkdrop } from './components/visualisers/milkdrop/Milkdrop';
 import WaveForm from './components/visualisers/waveform/WaveForm';
 import Playlist from './components/Playlist';
 import { BlobServiceClient } from '@azure/storage-blob';
 import Dropper from './components/Dropper';
-import { ICueFileInfo, ITrackInfo } from './types/ITrackInfo';
-
-export interface INowPlaying {
-  currentTrack: string | null;
-  // playbackPosition: number | null;
-  currentAlbum: string | null;
-}
-
-export interface IVisualiserProps {
-  audioContext: AudioContext;
-  audioSource: MediaElementAudioSourceNode;
-  zenMode: boolean;
-  nowPlayingInfo: INowPlaying;
-}
-
-interface IAudioInformation {
-  audioContext: AudioContext;
-  audioSource: MediaElementAudioSourceNode;
-}
-
-interface IVisualiser {
-  component: FunctionComponent<IVisualiserProps>;
-  name: string;
-}
-
-export interface ITrackItem {
-  name: string;
-  url: string;
-  isPlaying: boolean;
-  cueInfo?: ICueFileInfo;
-}
+import { ICueFileInfo, ICueFileTrackInfo } from './types/CueFileTypes';
+import React from 'react';
+import { IAudioInformation } from './types/AudioTypes';
+import { IAlbumItem } from './types/AlbumTypes';
+import { IPlayback } from './types/Playback';
+import { IVisualiser } from './types/VIsualiserTypes';
 
 type CueFile = { name: string; content: string };
 type CueFiles = CueFile[];
@@ -44,40 +19,53 @@ const AvailableVisualisers: IVisualiser[] = [
   { component: WaveForm, name: "WaveForm" }
 ];
 
+export const AppContext = React.createContext<{
+  albums: IAlbumItem[];
+  visualiser: IVisualiser;
+  audioInformation?: IAudioInformation;
+  playback: IPlayback;
+} | null>(null);
+
 function App() {
   const audioRef = useRef<HTMLMediaElement>(null);
   const [audioInformation, setAudioInformation] = useState<IAudioInformation>();
   const [zenMode, setZenMode] = useState(false);
   const [activeVisualiser, setActiveVisualiser] = useState(0);
-  const [playList, setPlayList] = useState<ITrackItem[]>([]);
+  const [albums, setAlbums] = useState<IAlbumItem[]>([]);
   const Component = useMemo(() => AvailableVisualisers[activeVisualiser].component, [activeVisualiser]);
   const [audioConnected, setAudioConnected] = useState(false);
-  const [nowPlaying, setNowPlaying] = useState<INowPlaying>({ currentTrack: null, playbackPosition: null, currentAlbum: null });
-  const playlistHasItems = useMemo(() => playList.length > 0, [playList]);
-  const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0);
+  const [playback, setPlayback] = useState<IPlayback>({ currentTrack: null, playbackPosition: null, playingAlbumIndex: -1 });
+  const playlistHasItems = useMemo(() => albums.length > 0, [albums]);
+  // const [currentPlaybackPosition, setCurrentPlaybackPosition] = useState(0);
 
+
+  // TODO: is this albumns or cuefile?
   useEffect(() => {
-    const playing = playList.find(x => x.isPlaying);
-    if (playing && currentPlaybackPosition !== null) {
-      const track = playing.cueInfo?.tracks[(playing.cueInfo?.tracks.findIndex(x => x.timeIndex > currentPlaybackPosition) ?? 1) - 1]?.title ?? "Unknown Track";
-      const previousTrack = nowPlaying.currentTrack ?? "Unknown Track";
+    if (playlistHasItems && playback && playback.playingAlbumIndex > -1) {
+      const playing = albums[playback.playingAlbumIndex];
+      const track = playing.cueInfo?.tracks[
+        (playing.cueInfo?.tracks.findIndex(x => x.timeIndex > (playback.playbackPosition ?? 0)) ?? 1) - 1
+      ]?.title ?? "Unknown Track";
+      const previousTrack = playback.currentTrack ?? "Unknown Track";
       if (track !== previousTrack) {
         const np = {
-          currentTrack: track,
-          // playbackPosition: currentPlaybackPosition,
-          currentAlbum: playing.name
-        } as INowPlaying;
-        setNowPlaying(np);
+          // currentTrack: string | null;
+          playbackPosition: playback.playbackPosition,
+          // currentAlbum: string | null;
+          playingAlbumIndex: playback.playingAlbumIndex
+        } as IPlayback;
+        setPlayback(np);
       }
     }
-  }, [currentPlaybackPosition, playList, nowPlaying]);
+  }, [currentPlaybackPosition, albums, playback]);
 
+  // Fetch the files from the Azure Blob Storage
   useEffect(() => {
     const fetchFiles = async () => {
       try {
         const blobServiceClient = new BlobServiceClient('https://rgdmusicstorage.blob.core.windows.net/?sv=2022-11-02&ss=b&srt=co&sp=rltf&se=2026-03-09T05:36:41Z&st=2025-03-08T21:36:41Z&spr=https&sig=w4R8CwEJ2RyOer%2BV4dy%2F2FfaLq21U2DZiobhXvbdktY%3D');
         const containerClient = blobServiceClient.getContainerClient('music');
-        const audioFiles: ITrackItem[] = [];
+        const audioFiles: IAlbumItem[] = [];
         const cueFiles: CueFiles = [];
 
         for await (const blob of containerClient.listBlobsFlat()) {
@@ -107,7 +95,7 @@ function App() {
 
     fetchFiles()
       .then(success => {
-        setPlayList(success);
+        setAlbums(success);
       })
       .catch(error => {
         console.log("Error getting playlist from cdn:", error);
@@ -134,7 +122,7 @@ function App() {
     e.preventDefault();
 
     let droppedFilesProcessed = false;
-    const newFileList = [...playList];
+    const newFileList = [...albums];
 
     const processFile = (f: File) => {
       if (f.type.startsWith('audio/')) {
@@ -148,7 +136,7 @@ function App() {
         // if (playListItem) {
         f.text()
           .then(success => {
-            setPlayList([...parseCueFile([{ name: f.name, content: success }], playList)]);
+            setAlbums([...parseCueFile([{ name: f.name, content: success }], albums)]);
           })
           .catch(error => {
             console.log(error);
@@ -180,7 +168,7 @@ function App() {
         track.isPlaying = true;
         audioRef.current!.src = track.url;
         audioRef.current!.play();
-        setPlayList([...newFileList]);
+        setAlbums([...newFileList]);
       }
       connectAudio();
     }
@@ -190,80 +178,87 @@ function App() {
     setActiveVisualiser(i);
   }
 
-  const handleFileChanged = async (blob: ITrackItem) => {
+  const handleFileChanged = async (blob: IAlbumItem) => {
     if (audioRef.current) {
       audioRef.current.src = blob.url;
       audioRef.current.play();
-      const newFileList = [...playList];
+      const newFileList = [...albums];
       newFileList.forEach(x => x.isPlaying = false);
       blob.isPlaying = true;
-      setPlayList(newFileList);
+      setAlbums(newFileList);
       connectAudio();
     }
   }
 
   const handlePlaybackPositionChanged = (n: number) => {
-    setCurrentPlaybackPosition(n);
+    setPlayback({
+      ...playback,
+      playbackPosition: n,
+    });
   }
 
-  return <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
-    <nav className={`navbar fixed-top navbar-expand ${zenMode && playlistHasItems ? "invisible" : "visible"}`} data-bs-theme="dark">
-      <div className="container-fluid">
-        {/* <span className="navbar-brand mb-0 h1">music.roygdavis.dev</span> */}
-        <div className="d-flex flex-column float-start text-white">
-          <h3 className="text-start"><i className="bi bi-headphones me-1"></i>music.roygdavis.dev</h3>
-          <p className="text-start me-4">Site by <a href="https://github.com/roygdavis/music" className="text-white">Roy G Davis</a>, using <a href="https://github.com/jberg/butterchurn" className="text-white"> Butterchurn </a>with <i className="text-white bi bi-heart-fill"></i></p>
-        </div>
-        <div className='d-flex flex-row justify-content-between'>
-          {playlistHasItems && <ul className="navbar-nav">
-            {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
-          </ul>}
-          <span className='text-white me-auto"'>{nowPlaying.currentTrack ?? ""}</span>
-          {/* </div>
+  return <AppContext.Provider value={
+    {
+      albums: albums,
+      visualiser: AvailableVisualisers[activeVisualiser],
+      audioInformation: audioInformation,
+      playback: playback,
+    }
+  }>
+    <div className="w-100 d-flex vh-100 overflow-hidden p-0" onDragOver={handleDragOver} onDrop={handleDrop} onMouseEnter={() => setZenMode(false)} onMouseLeave={() => setZenMode(true)} >
+      <nav className={`navbar fixed-top navbar-expand ${zenMode && playlistHasItems ? "invisible" : "visible"}`} data-bs-theme="dark">
+        <div className="container-fluid">
+          {/* <span className="navbar-brand mb-0 h1">music.roygdavis.dev</span> */}
+          <div className="d-flex flex-column float-start text-white">
+            <h3 className="text-start"><i className="bi bi-headphones me-1"></i>music.roygdavis.dev</h3>
+            <p className="text-start me-4">Site by <a href="https://github.com/roygdavis/music" className="text-white">Roy G Davis</a>, using <a href="https://github.com/jberg/butterchurn" className="text-white"> Butterchurn </a>with <i className="text-white bi bi-heart-fill"></i></p>
+          </div>
+          <div className='d-flex flex-row justify-content-between'>
+            {playlistHasItems && <ul className="navbar-nav">
+              {AvailableVisualisers.map((x, i) => <button key={`nav-viz-item-${i}`} className={`nav-link${i === activeVisualiser ? " active" : ""}`} onClick={() => handleVisualiserChanged(i)}>{x.name}</button>)}
+            </ul>}
+            <span className='text-white me-auto"'>{playback.currentTrack ?? ""}</span>
+            {/* </div>
         <div className='d-flex flex-row justify-content-end'> */}
-          <span className='text-white me-2 pt-2'>{nowPlaying.currentAlbum}</span>
+            <span className='text-white me-2 pt-2'>{playback.currentAlbum}</span>
 
-          <a
-            tabIndex={0}
-            className="btn text-white"
-            data-bs-toggle="offcanvas"
-            href="#offcanvasPlaylist"
-            role="button"
-            aria-controls="offcanvasPlaylist">
-            Playlist <i className="bi bi-list"></i>
-          </a>
+            <a
+              tabIndex={0}
+              className="btn text-white"
+              data-bs-toggle="offcanvas"
+              href="#offcanvasPlaylist"
+              role="button"
+              aria-controls="offcanvasPlaylist">
+              Playlist <i className="bi bi-list"></i>
+            </a>
+          </div>
+        </div>
+      </nav>
+      {audioConnected
+        ? <Component />
+        : <Dropper />}
+      <div className='position-absolute top-50 end-50 text-white'>
+
+      </div>
+      <Playlist onFileChanged={handleFileChanged}></Playlist>
+      <div className="fixed-bottom">
+        <div className="col">
+          <audio
+            className={`w-100 sticky-bottom ${audioInformation ? "visible" : "invisible"}`}
+            controls={!zenMode}
+            ref={audioRef}
+            autoPlay
+            crossOrigin="anonymous"
+            onProgress={e => handlePlaybackPositionChanged(e.currentTarget.currentTime)}
+            onTimeUpdate={e => handlePlaybackPositionChanged(e.currentTarget.currentTime)}
+          />
         </div>
       </div>
-    </nav>
-    {audioConnected
-      ? <Component
-        audioContext={audioInformation!.audioContext}
-        audioSource={audioInformation!.audioSource}
-        zenMode={zenMode}
-        nowPlayingInfo={nowPlaying}
-      />
-      : <Dropper />}
-    <div className='position-absolute top-50 end-50 text-white'>
-
     </div>
-    <Playlist blobs={playList} onFileChanged={handleFileChanged}></Playlist>
-    <div className="fixed-bottom">
-      <div className="col">
-        <audio
-          className={`w-100 sticky-bottom ${audioInformation ? "visible" : "invisible"}`}
-          controls={!zenMode}
-          ref={audioRef}
-          autoPlay
-          crossOrigin="anonymous"
-          onProgress={e => handlePlaybackPositionChanged(e.currentTarget.currentTime)}
-          onTimeUpdate={e => handlePlaybackPositionChanged(e.currentTarget.currentTime)}
-        />
-      </div>
-    </div>
-  </div>;
+  </AppContext.Provider>;
 }
 
-const parseCueFile = (cueFiles: CueFiles, audioFiles: ITrackItem[]): ITrackItem[] => {
+const parseCueFile = (cueFiles: CueFiles, audioFiles: IAlbumItem[]): IAlbumItem[] => {
   cueFiles.forEach(cueFile => {
     const baseName = cueFile.name.slice(0, -4); // Remove ".cue"
     const matchingAudio = audioFiles.find(audio => audio.name.startsWith(baseName));
@@ -288,7 +283,7 @@ const parseCueFile = (cueFiles: CueFiles, audioFiles: ITrackItem[]): ITrackItem[
         if (line.startsWith("PERFORMER"))
           cueFileInfo.performer = line.slice(10);
         if (line.startsWith("\t") && !line.startsWith("\t\t"))
-          cueFileInfo.tracks.push({} as ITrackInfo);
+          cueFileInfo.tracks.push({} as ICueFileTrackInfo);
         if (line.startsWith("\t\tTITLE")) {
           const t = cueFileInfo.tracks[cueFileInfo.tracks.length - 1];
           t.title = line.substring(8);
@@ -323,3 +318,4 @@ const parseCueFile = (cueFiles: CueFiles, audioFiles: ITrackItem[]): ITrackItem[
 // </div>
 
 export default App;
+
