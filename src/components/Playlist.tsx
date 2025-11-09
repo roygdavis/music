@@ -1,6 +1,6 @@
 import { useContext } from "react";
-import { AppContext } from "../App";
 import { IAlbumItem } from "../types/AlbumTypes";
+import { AppContext } from "../AppContextProvider";
 
 export const Playlist = (props: { onFileChanged(blob: IAlbumItem): void; }) => {
     const context = useContext(AppContext);

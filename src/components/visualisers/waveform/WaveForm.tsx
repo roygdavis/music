@@ -1,7 +1,7 @@
 import { useRef, useEffect, useState, useMemo, useContext } from "react";
 import useSize from "../../../hooks/useSize";
 import { IPresets, Presets } from "../../Presets";
-import { AppContext } from "../../../App";
+import { AppContext } from "../../../AppContextProvider";
 
 interface DrawParameters {
     analyser: AnalyserNode;
@@ -19,7 +19,6 @@ interface PresetAction {
 
 const WaveForm = () => {
     const context = useContext(AppContext);
-    const audioInformation = context?.audioInformation;
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [width, height] = useSize();
@@ -67,15 +66,17 @@ const WaveForm = () => {
     };
 
     useEffect(() => {
-        const analyser = audioInformation!.audioContext.createAnalyser();
-        audioInformation!.audioSource.connect(analyser);
-        analyserRef.current = analyser;
-        if (canvasRef && canvasRef.current) {
-            canvasCtxRef.current = canvasRef.current.getContext("2d");
+        const analyser = context?.audioContext?.createAnalyser();
+        if (analyser) {
+            context?.audioSource?.connect(analyser);
+            analyserRef.current = analyser;
+            if (canvasRef && canvasRef.current) {
+                canvasCtxRef.current = canvasRef.current.getContext("2d");
+            }
         }
 
         return () => {
-            analyser.disconnect();
+            analyser?.disconnect();
         }
     });
 
@@ -103,7 +104,7 @@ const WaveForm = () => {
                 width={width}
                 height={height}
             />
-            <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={zenMode} ></Presets>
+            <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={context?.zenMode ?? false} ></Presets>
         </>
     );
 };

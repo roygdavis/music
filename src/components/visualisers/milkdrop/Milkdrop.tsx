@@ -4,42 +4,46 @@ import butterchurn from 'butterchurn';
 import butterchurnPresets from 'butterchurn-presets';
 import useSize from '../../../hooks/useSize';
 import { Presets } from '../../Presets';
-import { AppContext } from '../../../App';
+import { AppContext } from '../../../AppContextProvider';
 
 
 export const Milkdrop = () => {
   const context = useContext(AppContext);
-  const audioInformation = context?.audioInformation;
-  const nowPlaying = context?.playback;
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const [width, height] = useSize();
   const visualiserRef = useRef<butterchurn.Visualizer>();
   const frameRef = useRef(0);
+  const nowPlaying = useMemo(() => {
+    if (!context?.albums || context.playingAlbumIndex === undefined) return "";
+    return context.albums[context.playingAlbumIndex]?.name || "Unknown Track";
+  }, [context?.albums, context?.playingAlbumIndex]);
 
   useEffect(() => {
     const connectAudio = () => {
-      const visualiser = butterchurn.createVisualizer(audioInformation!.audioContext, canvasRef.current!, {
-        width: width,
-        height: height,
-      });
-      visualiser.connectAudio(audioInformation!.audioSource);
-      visualiserRef.current = visualiser;
-      renderFrame();
+      if (context && context.audioContext && context.audioSource && !visualiserRef.current && canvasRef.current) {
+        const visualiser = butterchurn.createVisualizer(context.audioContext, canvasRef.current, {
+          width: width,
+          height: height,
+        });
+        visualiser.connectAudio(context.audioSource);
+        visualiserRef.current = visualiser;
+        renderFrame();
+      }
     };
-    if (!audioInformation?.audioContext && !audioInformation?.audioSource)
-      return;
+
     connectAudio();
+
     return () => {
       visualiserRef.current = undefined;
       cancelAnimationFrame(frameRef.current);
     };
-  }, [audioInformation?.audioSource, audioInformation?.audioContext]);
+  }, [context?.audioSource, context?.audioContext]);
 
   useEffect(() => {
     const handler = setTimeout(() => {
       if (visualiserRef.current && frameRef.current) {
         const viz = visualiserRef.current as butterchurn.Visualizer;
-        viz.launchSongTitleAnim(nowPlaying?.currentTrack ?? "Unknown Track");
+        viz.launchSongTitleAnim(nowPlaying);
       }
     }, 1500);
 
