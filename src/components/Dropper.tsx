@@ -1,4 +1,3 @@
-
 export const Dropper = () => {
     return <div className="w-100 d-flex text-center text-bg-dark">
         <div className="w-100 d-flex p-3 mx-auto flex-column justify-content-center">

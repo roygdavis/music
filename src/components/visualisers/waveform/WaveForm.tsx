@@ -1,7 +1,7 @@
-import { useRef, useEffect, useState, useMemo } from "react";
+import { useRef, useEffect, useState, useMemo, useContext } from "react";
 import useSize from "../../../hooks/useSize";
 import { IPresets, Presets } from "../../Presets";
-import { IVisualiserProps } from "../../../App";
+import { AppContext } from "../../../AppContextProvider";
 
 interface DrawParameters {
     analyser: AnalyserNode;
@@ -17,8 +17,8 @@ interface PresetAction {
     drawCallback: (params: DrawParameters) => void;
 }
 
-const WaveForm = (props: IVisualiserProps) => {
-    const { audioContext, audioSource, zenMode } = props;
+const WaveForm = () => {
+    const context = useContext(AppContext);
     const canvasRef = useRef<HTMLCanvasElement | null>(null);
     const canvasCtxRef = useRef<CanvasRenderingContext2D | null>(null);
     const [width, height] = useSize();
@@ -66,15 +66,17 @@ const WaveForm = (props: IVisualiserProps) => {
     };
 
     useEffect(() => {
-        const analyser = audioContext.createAnalyser();
-        audioSource.connect(analyser);
-        analyserRef.current = analyser;
-        if (canvasRef && canvasRef.current) {
-            canvasCtxRef.current = canvasRef.current.getContext("2d");
+        const analyser = context?.audioContext?.createAnalyser();
+        if (analyser) {
+            context?.audioSource?.connect(analyser);
+            analyserRef.current = analyser;
+            if (canvasRef && canvasRef.current) {
+                canvasCtxRef.current = canvasRef.current.getContext("2d");
+            }
         }
 
         return () => {
-            analyser.disconnect();
+            analyser?.disconnect();
         }
     });
 
@@ -102,7 +104,7 @@ const WaveForm = (props: IVisualiserProps) => {
                 width={width}
                 height={height}
             />
-            <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={zenMode} ></Presets>
+            <Presets onPresetChanged={i => handlePresetChanged(i)} availablePresets={presets} zenMode={context?.zenMode ?? false} ></Presets>
         </>
     );
 };
