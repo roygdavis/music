@@ -3,7 +3,7 @@ import { BlobServiceClient } from '@azure/storage-blob';
 import { IAlbumItem } from './types/AlbumTypes';
 import { Player } from './components/Player';
 import { AppContext } from './AppContextProvider';
-import { parseCueFile } from './utils/parseCueFIle';
+import { parseAndMatchCueFile } from './utils/parseAndMatchCueFile';
 import { CueFiles } from './types/CueFile';
 
 
@@ -47,7 +47,7 @@ const Page=()=> {
           }
         }
 
-        parseCueFile(cueFiles, audioFiles);
+        parseAndMatchCueFile(cueFiles, audioFiles);
         return audioFiles;
       } catch {
         throw "";
@@ -55,8 +55,8 @@ const Page=()=> {
     };
 
     fetchFiles()
-      .then(success => {
-        context?.setAlbums(success);
+      .then(albums => {
+        context?.setAlbums(albums);
       })
       .catch(error => {
         console.log("Error getting playlist from cdn:", error);

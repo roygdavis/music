@@ -2,7 +2,7 @@ import { IAlbumItem } from "../types/AlbumTypes";
 import { CueFiles } from "../types/CueFile";
 import { ICueFileInfo, ICueFileTrackInfo } from "../types/CueFileTypes";
 
-export const parseCueFile = (cueFiles: CueFiles, audioFiles: IAlbumItem[]): IAlbumItem[] => {
+export const parseAndMatchCueFile = (cueFiles: CueFiles, audioFiles: IAlbumItem[]): IAlbumItem[] => {
   cueFiles.forEach(cueFile => {
     const baseName = cueFile.name.slice(0, -4); // Remove ".cue"
     const matchingAudio = audioFiles.find(audio => audio.name.startsWith(baseName));
