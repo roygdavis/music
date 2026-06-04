@@ -24,7 +24,7 @@ const Page=()=> {
   useEffect(() => {
     const fetchFiles = async () => {
       try {
-        const blobServiceClient = new BlobServiceClient('https://rgdmusicstorage.blob.core.windows.net/?sv=2026-02-06&ss=bf&srt=c&sp=rlf&se=2027-06-04T16:46:35Z&st=2026-06-04T08:31:35Z&spr=https&sig=DHkhhpJJsiA5NQPArVZJp1uBfM2n%2FFgHn7y8aByMoig%3D');
+        const blobServiceClient = new BlobServiceClient('https://rgdmusicstorage.blob.core.windows.net/?sv=2026-02-06&ss=bf&srt=co&sp=rlf&se=2027-06-04T16:46:35Z&st=2026-06-04T08:31:35Z&spr=https&sig=Yv3QHdMUHfskRp7ZyW%2B7eQw7tZtU1NYU77WvUzlpZsg%3D');
         const containerClient = blobServiceClient.getContainerClient('music');
         const audioFiles: IAlbumItem[] = [];
         const cueFiles: CueFiles = [];
